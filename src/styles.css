@@ -425,3 +425,4 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .pill.dot { width: 10px; height: 10px; padding: 0; border: 2px solid #fff; --tone: #8b95a1; transform: translate(-50%, -50%); }
 .pill.dot::after { display: none; }
 .pill:hover { z-index: 5; filter: brightness(1.08); }
+.forgot-link { background: none; border: 0; color: var(--ink-3); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 4px 0 0; align-self: center; }

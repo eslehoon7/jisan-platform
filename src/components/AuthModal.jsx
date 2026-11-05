@@ -44,6 +44,16 @@ export default function AuthModal({ onClose, initialMode = 'login', initialKind 
     }
   }
 
+  // 비밀번호 재설정 메일 보내기
+  async function sendReset(e) {
+    e.preventDefault()
+    if (!form.email) return fail('가입한 이메일을 입력해 주세요.')
+    setState('busy')
+    const { error } = await supabase.auth.resetPasswordForEmail(form.email, { redirectTo: window.location.origin })
+    if (error) return fail(koError(error.message))
+    setState('reset-sent')
+  }
+
   async function social(provider) {
     if (provider === 'naver') return fail('네이버 간편가입은 준비 중이에요. 곧 열릴 예정이에요.')
     const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo: window.location.origin } })
@@ -82,6 +92,24 @@ export default function AuthModal({ onClose, initialMode = 'login', initialKind 
             <BusinessApplyForm onDone={setApplied} />
             <p className="switch">이미 사업자 회원이신가요? <button onClick={() => switchMode('login')}>로그인</button></p>
           </>
+        ) : state === 'reset-sent' ? (
+          <div className="sent">
+            <div className="sent-icon">🔑</div>
+            <h3>메일함을 확인해 주세요</h3>
+            <p className="muted"><b>{form.email}</b> 로 비밀번호 재설정 메일을 보냈어요.<br />메일 속 버튼을 누르면 새 비밀번호를 정할 수 있어요.</p>
+            <button className="btn primary full" onClick={onClose}>확인</button>
+          </div>
+        ) : mode === 'forgot' ? (
+          <>
+            <h3>비밀번호 찾기</h3>
+            <p className="muted">가입한 이메일을 입력하면 비밀번호를 새로 정할 수 있는 메일을 보내드려요.</p>
+            <form className="auth-form" onSubmit={sendReset}>
+              <input type="email" required placeholder="가입한 이메일" value={form.email} onChange={set('email')} autoComplete="email" />
+              {state === 'error' && <p className="error">{msg}</p>}
+              <button className="btn primary full" disabled={state === 'busy'}>{state === 'busy' ? '보내는 중…' : '재설정 메일 받기'}</button>
+            </form>
+            <p className="switch"><button onClick={() => switchMode('login')}>← 로그인으로 돌아가기</button></p>
+          </>
         ) : state === 'sent' ? (
           <div className="sent">
             <div className="sent-icon">📩</div>
@@ -113,6 +141,7 @@ export default function AuthModal({ onClose, initialMode = 'login', initialKind 
               <button className="btn primary full" disabled={state === 'busy'}>
                 {state === 'busy' ? '처리 중…' : mode === 'signup' ? '가입하기' : '로그인'}
               </button>
+              {mode === 'login' && <button type="button" className="forgot-link" onClick={() => switchMode('forgot')}>비밀번호를 잊으셨나요?</button>}
             </form>
 
             {/* ── 간편가입 (일반회원만) ── */}

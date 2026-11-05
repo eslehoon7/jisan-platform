@@ -10,6 +10,7 @@ import BuildingPanel from './components/BuildingPanel'
 import AuthModal from './components/AuthModal'
 import AdminPage from './components/admin/AdminPage'
 import BizCenter from './components/biz/BizCenter'
+import NewPasswordModal from './components/NewPasswordModal'
 
 // 리치고 방식: 지도가 화면 전체, 나머지는 지도 위에 떠 있는 패널
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
   const [authKind, setAuthKind] = useState('person')
   const [hasBiz, setHasBiz] = useState(false)
   const [route, setRoute] = useState(window.location.hash)
+  const [recovery, setRecovery] = useState(false) // 비밀번호 재설정 메일 링크로 들어온 경우
 
   // 주소 #/admin 이면 관리자 화면
   useEffect(() => {
@@ -50,7 +52,7 @@ export default function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    const { data } = supabase.auth.onAuthStateChange((e, s) => { setSession(s); if (e === 'PASSWORD_RECOVERY') setRecovery(true) })
     return () => data.subscription.unsubscribe()
   }, [])
 
@@ -226,6 +228,7 @@ export default function App() {
       </div>
 
       {authOpen && <AuthModal key={authKind} initialKind={authKind} initialMode="login" onClose={() => setAuthOpen(false)} />}
+      {recovery && <NewPasswordModal onClose={() => setRecovery(false)} />}
     </div>
   )
 }
