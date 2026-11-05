@@ -39,7 +39,12 @@ export default function AuthModal({ onClose, initialMode = 'login', initialKind 
       setState('busy')
       const { error } = await supabase.auth.signInWithPassword({ email: form.email, password: form.password })
       if (error) return fail(koError(error.message))
-      if (kind === 'business') window.location.hash = '#/biz'
+      if (kind === 'business') {
+        // 관리자 계정이면 사업자센터 대신 관리자 화면으로
+        const { data: u } = await supabase.auth.getUser()
+        const { data: p } = await supabase.from('profiles').select('role').eq('id', u.user?.id).maybeSingle()
+        window.location.hash = p?.role === 'admin' ? '#/admin' : '#/biz'
+      }
       onClose()
     }
   }

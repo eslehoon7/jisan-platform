@@ -10,6 +10,11 @@ export default function BizCenter({ session }) {
   const [biz, setBiz] = useState(undefined) // undefined=불러오는 중, null=신청 없음
   const [agentId, setAgentId] = useState(null)
   const [tab, setTab] = useState('main')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [applyAnyway, setApplyAnyway] = useState(false)
+  useEffect(() => {
+    supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle().then(({ data }) => setIsAdmin(data?.role === 'admin'))
+  }, [session.user.id])
 
   const load = async () => {
     const { data } = await supabase.from('businesses').select('*').eq('profile_id', session.user.id).maybeSingle()
@@ -34,6 +39,21 @@ export default function BizCenter({ session }) {
   )
 
   if (biz === undefined) return shell(<p className="muted">불러오는 중…</p>)
+
+  // 관리자 계정이 사업자센터로 들어온 경우: 관리자 화면으로 안내
+  if (!biz && isAdmin && !applyAnyway)
+    return shell(
+      <div className="admin-single narrow">
+        <div className="status-card">
+          <h2>⚙️ 관리자 계정이에요</h2>
+          <p className="muted">{session.user.email} 은 <b>관리자</b> 계정이라 사업자 가입이 필요 없어요. 건물·매물·사업자 승인은 모두 관리자 화면에서 할 수 있어요.</p>
+          <div className="row" style={{ gap: 8, marginTop: 12 }}>
+            <a className="btn primary" href="#/admin">관리자 화면으로 가기</a>
+            <button className="btn white" onClick={() => setApplyAnyway(true)}>그래도 사업자 신청하기</button>
+          </div>
+        </div>
+      </div>
+    )
 
   // 신청 없음 / 반려 → 신청서
   if (!biz || biz.status === 'rejected')
