@@ -1,0 +1,7 @@
+# Netlify 설정: 올릴 때 npm run build 로 완성본(dist)을 만들어 공개
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
