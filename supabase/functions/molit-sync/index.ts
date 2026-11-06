@@ -1,6 +1,6 @@
 // 국토부 실거래 자동 수집 (상업업무용 + 공장·창고 등) — 지산맵
 // 호출: (1) 매일 새벽 크론 { token }  (2) 관리자 화면 [지금 수집] (관리자 로그인 토큰)
-// body: { months?: 1~36 (기본 2), apis?: ["nrg","indu"], action?: "probe", api?: "nrg"|"indu" }
+// body: { months?: 1~36 (기본 2), offset?: 건너뛸 최근 개월 수, apis?: ["nrg","indu"], action?: "probe", api?: "nrg"|"indu" }
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -140,7 +140,9 @@ Deno.serve(async (req) => {
       return json({ api, http: res.status, ym, code: p.code, msg: p.msg, total: p.total, fields: p.items[0] ? Object.keys(p.items[0]) : [], sample: p.items[0] ?? null, head: p.items.length ? undefined : text.slice(0, 300) });
     }
 
-    const months = recentMonths(Math.min(Math.max(Number(body.months) || 2, 1), 36));
+    // offset: 최근 몇 개월을 건너뛰고 그 이전부터 가져올지 (과거 자료를 나눠 받을 때 사용)
+    const offset = Math.min(Math.max(Number(body.offset) || 0, 0), 120);
+    const months = recentMonths(offset + Math.min(Math.max(Number(body.months) || 2, 1), 36)).slice(offset);
     const { data: run } = await db.from("molit_sync_runs")
       .insert({ trigger, months: `${months[months.length - 1]}~${months[0]}` }).select("id").single();
 
