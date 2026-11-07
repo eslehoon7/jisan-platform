@@ -61,6 +61,7 @@ export default function BuildingsAdmin({ prefill }) {
     const { error } = form.id
       ? await supabase.from('buildings').update(row).eq('id', form.id)
       : await supabase.from('buildings').insert(row)
+    if (error?.code === '23505') return flash('⚠ 같은 지번(구·법정동·지번)의 건물이 이미 등록돼 있어요. 건물 목록에서 찾아 수정해 주세요.')
     if (error) return flash('⚠ 저장 실패: ' + error.message)
     flash(form.id ? '수정했어요' : '새 건물을 등록했어요')
     setForm(null); load()

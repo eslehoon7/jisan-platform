@@ -72,7 +72,7 @@ export default function MolitPanel({ onRegister }) {
     const targets = cands.filter((c) => c.is_jisan && info[bldKey(c)]?.ok && info[bldKey(c)]?.name)
     if (!targets.length) return setBulk('⚠ 등록할 건물이 없어요 (건물명을 아직 못 가져왔어요)')
     if (!window.confirm(`지산 ${targets.length}곳을 건물로 한꺼번에 등록할까요?\n등록하면 바로 지도에 나오고, 실거래가 자동으로 붙어요.`)) return
-    let ok = 0, fail = []
+    let ok = 0, dup = 0, fail = []
     for (const [i, c] of targets.entries()) {
       setBulk(`등록 중… ${i + 1} / ${targets.length}`)
       const p = prefillOf(c)
@@ -92,9 +92,10 @@ export default function MolitPanel({ onRegister }) {
         gross_area_m2: num(p.gross_area_m2), parking_spaces: num(p.parking_spaces),
         sgg_cd: c.sgg_cd, umd_nm: c.umd_nm, jibun: c.jibun, is_published: true,
       })
-      if (error) fail.push(p.name); else ok++
+      if (error?.code === '23505') dup++ // 이미 같은 지번 건물이 있음 → 건너뜀
+      else if (error) fail.push(p.name); else ok++
     }
-    setBulk(`✅ ${ok}곳 등록 완료` + (fail.length ? ` · ⚠ ${fail.length}곳 실패 (${fail.slice(0, 5).join(', ')}${fail.length > 5 ? ' 외' : ''}) — 하나씩 [건물로 등록]으로 해 주세요` : ''))
+    setBulk(`✅ ${ok}곳 등록 완료` + (dup ? ` · 이미 있던 ${dup}곳은 건너뜀` : '') + (fail.length ? ` · ⚠ ${fail.length}곳 실패 (${fail.slice(0, 5).join(', ')}${fail.length > 5 ? ' 외' : ''}) — 하나씩 [건물로 등록]으로 해 주세요` : ''))
     load()
   }
 
