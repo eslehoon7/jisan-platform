@@ -436,7 +436,9 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .todo-next { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
 .todo-next input { margin-left: 6px; padding: 4px 6px; }
 
-/* 상세 말풍선 위 건물 이름 */
-.bubble-title { position: absolute; left: 50%; bottom: calc(100% + 4px); transform: translateX(-50%); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 11px; font-weight: 700; color: #fff; background: rgba(25, 31, 40, .82); padding: 2px 8px; border-radius: 999px; pointer-events: none; }
-.bubble.active .bubble-title { background: var(--tone, #1b64da); }
+/* 상세 말풍선 맨 윗줄: 건물 이름 (박스 안) */
+.bubble-title { display: block; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11px; font-weight: 800; color: var(--ink, #191f28); background: #fff; padding: 4px 9px 3px;
+  border-bottom: 1px solid #eef0f3; border-radius: 10px 10px 0 0; text-align: center; }
+.bubble.active .bubble-title { color: var(--tone, #1b64da); }
+.bubble .bubble-title ~ .bubble-row.ask { border-radius: 0; }
