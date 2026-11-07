@@ -5,9 +5,14 @@ import { Field, MoneyInput, Toast } from './ui'
 
 const EMPTY = { id: null, building_id: '', deal_type: '매매', title: '', area_m2: '', asking_price_krw: null,
   auction_first_price_krw: null, auction_current_price_krw: null, auction_round: '', status: 'active',
+  auction_case_no: '', auction_court: '', auction_sale_date: '',
   d_unit_no: '', d_floor: '', d_maintenance: null, d_deposit: null, d_monthly: null, d_description: '' }
 const STATUS = { active: '🟢 노출 중', closed: '⚫ 거래완료', hidden: '🙈 숨김' }
 const num = (v) => (v === '' || v == null ? null : Number(v))
+// 관할 법원: 성동·송파 → 서울동부지방법원, 영등포 → 서울남부지방법원
+export const COURTS = ['서울동부지방법원', '서울남부지방법원', '서울중앙지방법원', '서울서부지방법원', '서울북부지방법원']
+// 서울 법원은 유찰될 때마다 최저가가 20%씩 내려가요
+export const nextMinPrice = (p) => (p ? Math.round((p * 0.8) / 10000) * 10000 : p)
 
 // agentId 가 있으면 '중개사 센터' 모드: 내 매물만 보고, 등록 시 내 중개사 정보가 자동으로 붙어요
 export default function ListingsAdmin({ agentId = null, allowedTypes = ['매매', '경매', '분양', '임대'] }) {
@@ -32,6 +37,7 @@ export default function ListingsAdmin({ agentId = null, allowedTypes = ['매매'
   function edit(r) {
     const d = (Array.isArray(r.listing_details) ? r.listing_details[0] : r.listing_details) || {}
     setForm({ ...EMPTY, ...r, area_m2: r.area_m2 ?? '', auction_round: r.auction_round ?? '',
+      auction_case_no: r.auction_case_no ?? '', auction_court: r.auction_court ?? '', auction_sale_date: r.auction_sale_date ?? '',
       d_unit_no: d.unit_no ?? '', d_floor: d.floor ?? '', d_maintenance: d.maintenance_fee_krw ?? null,
       d_deposit: d.deposit_krw ?? null, d_monthly: d.monthly_rent_krw ?? null, d_description: d.description ?? '' })
   }
@@ -42,16 +48,22 @@ export default function ListingsAdmin({ agentId = null, allowedTypes = ['매매'
     const main = auction ? f.auction_current_price_krw : f.asking_price_krw
     if (!f.building_id) return flash('⚠ 건물을 골라 주세요')
     if (!f.area_m2) return flash('⚠ 면적을 넣어 주세요')
-    if (!main && f.deal_type !== '임대') return flash(auction ? '⚠ 현재 경매가를 넣어 주세요' : '⚠ 가격을 넣어 주세요')
+    if (!main && f.deal_type !== '임대') return flash(auction ? '⚠ 현재 최저가를 넣어 주세요' : '⚠ 가격을 넣어 주세요')
+    if (auction && !f.auction_case_no.trim()) return flash('⚠ 사건번호를 넣어 주세요 (예: 2026타경12345)')
+    if (auction && !f.auction_sale_date) return flash('⚠ 매각기일(입찰일)을 넣어 주세요 — 지나면 결과 확인 알림이 와요')
     const row = {
       building_id: Number(f.building_id), deal_type: f.deal_type,
-      title: f.title.trim() || `${f.d_floor ? f.d_floor + '층 ' : ''}${f.deal_type} 물건`,
+      title: f.title.trim() || (auction ? `${f.auction_case_no.trim()}${f.d_unit_no ? ' · ' + f.d_unit_no : ''}` : `${f.d_floor ? f.d_floor + '층 ' : ''}${f.deal_type} 물건`),
       area_m2: num(f.area_m2),
       asking_price_krw: auction ? f.auction_current_price_krw : f.asking_price_krw,
       price_range: main ? wonShort(main) : f.d_deposit ? `보증금 ${wonShort(f.d_deposit)}` : '가격 협의',
       auction_first_price_krw: auction ? f.auction_first_price_krw : null,
       auction_current_price_krw: auction ? f.auction_current_price_krw : null,
       auction_round: auction ? num(f.auction_round) : null,
+      auction_case_no: auction ? f.auction_case_no.trim() : null,
+      auction_court: auction ? f.auction_court || null : null,
+      auction_sale_date: auction ? f.auction_sale_date || null : null,
+      ...(auction && !f.id ? { auction_result: '진행' } : {}),
       status: f.status,
       ...(agentId && !f.id ? { agent_id: agentId } : {}),
     }
@@ -61,6 +73,7 @@ export default function ListingsAdmin({ agentId = null, allowedTypes = ['매매'
       if (error) return flash('⚠ 저장 실패: ' + error.message)
     } else {
       const { data, error } = await supabase.from('listings').insert(row).select('id').single()
+      if (error?.code === '23505') return flash('⚠ 이 건물에 같은 사건번호 경매가 이미 있어요')
       if (error) return flash('⚠ 저장 실패: ' + error.message)
       id = data.id
     }
@@ -135,9 +148,19 @@ export default function ListingsAdmin({ agentId = null, allowedTypes = ['매매'
             <Field label="면적 (㎡) *"><input inputMode="decimal" value={form.area_m2} onChange={(e) => setForm({ ...form, area_m2: e.target.value.replace(/[^\d.]/g, '') })} placeholder="112.4" /></Field>
             {form.deal_type === '경매' ? (
               <>
-                <Field label="1차 경매가"><MoneyInput value={form.auction_first_price_krw} onChange={(v) => setForm({ ...form, auction_first_price_krw: v })} /></Field>
-                <Field label="현재 경매가 *"><MoneyInput value={form.auction_current_price_krw} onChange={(v) => setForm({ ...form, auction_current_price_krw: v })} /></Field>
-                <Field label="현재 회차"><input inputMode="numeric" value={form.auction_round} onChange={(e) => setForm({ ...form, auction_round: e.target.value.replace(/\D/g, '') })} placeholder="2" /></Field>
+                <Field label="사건번호 *"><input value={form.auction_case_no} onChange={set('auction_case_no')} placeholder="2026타경12345" /></Field>
+                <Field label="법원">
+                  <select value={form.auction_court} onChange={set('auction_court')}>
+                    <option value="">선택</option>
+                    {COURTS.map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="매각기일 (입찰일) *" hint="이 날짜가 지나면 '결과 확인' 알림이 와요"><input type="date" value={form.auction_sale_date} onChange={set('auction_sale_date')} /></Field>
+                <Field label="현재 회차"><input inputMode="numeric" value={form.auction_round} onChange={(e) => setForm({ ...form, auction_round: e.target.value.replace(/\D/g, '') })} placeholder="1" /></Field>
+                <Field label="1차 경매가 (감정가)"><MoneyInput value={form.auction_first_price_krw} onChange={(v) => setForm({ ...form, auction_first_price_krw: v })} /></Field>
+                <Field label="현재 최저가 *" hint={form.auction_first_price_krw && Number(form.auction_round) > 1 ? `${form.auction_round}차 계산값: ${wonShort(Math.round(form.auction_first_price_krw * 0.8 ** (Number(form.auction_round) - 1) / 10000) * 10000)} (서울 법원 20%씩 저감)` : '1차면 감정가와 같아요'}>
+                  <MoneyInput value={form.auction_current_price_krw} onChange={(v) => setForm({ ...form, auction_current_price_krw: v })} />
+                </Field>
               </>
             ) : form.deal_type !== '임대' ? (
               <Field label={form.deal_type === '분양' ? '분양가 *' : '호가 *'}><MoneyInput value={form.asking_price_krw} onChange={(v) => setForm({ ...form, asking_price_krw: v })} /></Field>

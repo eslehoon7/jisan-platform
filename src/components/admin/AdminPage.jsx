@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import BuildingsAdmin from './BuildingsAdmin'
 import ListingsAdmin from './ListingsAdmin'
+import AuctionTodo from './AuctionTodo'
 import TradesAdmin from './TradesAdmin'
 import BusinessesAdmin from './BusinessesAdmin'
 
@@ -14,6 +15,7 @@ const TABS = [
 // 관리자 화면 (주소: /#/admin)
 export default function AdminPage({ profile }) {
   const [tab, setTab] = useState('biz')
+  const [listKey, setListKey] = useState(0) // 경매 결과를 넣으면 매물 목록 새로고침
   const [prefill, setPrefill] = useState(null) // 실거래 후보 → 건물 등록 화면으로 넘길 값
   const register = (p) => { setPrefill({ ...p, _t: Date.now() }); setTab('buildings') }
 
@@ -39,7 +41,7 @@ export default function AdminPage({ profile }) {
       </header>
       <main className="admin-body">
         {tab === 'buildings' && <BuildingsAdmin prefill={prefill} />}
-        {tab === 'listings' && <ListingsAdmin />}
+        {tab === 'listings' && <><AuctionTodo onChanged={() => setListKey((k) => k + 1)} /><ListingsAdmin key={listKey} /></>}
         {tab === 'trades' && <TradesAdmin onRegister={register} />}
         {tab === 'biz' && <BusinessesAdmin />}
       </main>

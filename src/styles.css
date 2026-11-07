@@ -426,3 +426,12 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .pill.dot::after { display: none; }
 .pill:hover { z-index: 5; filter: brightness(1.08); }
 .forgot-link { background: none; border: 0; color: var(--ink-3); font-size: 12px; text-decoration: underline; cursor: pointer; padding: 4px 0 0; align-self: center; }
+
+/* ── 경매 할 일 ── */
+.auction-todo { max-width: 1400px; margin: 0 auto 16px; background: #fff; border-radius: 14px; padding: 16px 18px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.auction-todo h3 { margin: 0 0 10px; font-size: 16px; }
+.todo-card { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid #ffe2b8; background: #fffaf2; border-radius: 10px; margin-top: 8px; flex-wrap: wrap; }
+.todo-card p { margin: 4px 0 0; }
+.todo-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.todo-next { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+.todo-next input { margin-left: 6px; padding: 4px 6px; }
