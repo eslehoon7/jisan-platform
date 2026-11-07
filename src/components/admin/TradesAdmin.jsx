@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { won, m2 } from '../../lib/format'
 import { Field, MoneyInput, Toast } from './ui'
 import MolitPanel from './MolitPanel'
+import KicoxPanel from './KicoxPanel'
 
 // 실거래: 국토부 자동수집 현황 + 건물별 실거래 확인·수동 입력
 export default function TradesAdmin({ onRegister }) {
@@ -38,6 +39,7 @@ export default function TradesAdmin({ onRegister }) {
   return (
     <div className="admin-single wide">
       <MolitPanel onRegister={onRegister} />
+      <KicoxPanel onRegister={onRegister} />
       <div className="af-section big">건물별 실거래 보기 · 직접 입력</div>
       <div className="af-grid">
         <Field label="건물 선택" wide>
