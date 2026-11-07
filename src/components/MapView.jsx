@@ -26,6 +26,7 @@ function pinHtml(b, active, dealType) {
   const tone = dealType === '분양' ? 'sale' : dealType === '경매' ? 'auction' : 'buy'
   const act = active ? 'active' : ''
   const name = esc(b.name)
+  const title = `<div class="bubble-title">${name}</div>` // 말풍선 위 건물 이름
   if (!b.top_price && !b.trade_price) {
     // 매물도 거래도 없는 건물: 이름만 작게
     return `<div class="bubble nolist ${act}"><div class="bubble-row ask">${name}</div></div>`
@@ -33,7 +34,7 @@ function pinHtml(b, active, dealType) {
   if (dealType === '경매') {
     const more = b.same_count > 1 ? `<i class="pin-badge">+${b.same_count - 1}</i>` : ''
     const round = b.auction_round ? `<i class="round">${b.auction_round}차</i>` : ''
-    return `<div class="bubble auction ${act}" title="${name}">${more}`
+    return `<div class="bubble auction ${act}" title="${name}">${title}${more}`
       + `<div class="bubble-row ask"><span>1차 경매가</span><b>${wonShort(b.first_price)}</b></div>`
       + `<div class="bubble-row real"><span>현재 경매가${round}</span><b>${wonShort(b.top_price)}</b></div>`
       + `<div class="bubble-area">${b.show_area ? m2(b.show_area) : ''}</div></div>`
@@ -45,7 +46,7 @@ function pinHtml(b, active, dealType) {
   // 분양은 실가 없이 분양가 + 면적만
   const real = dealType === '분양' ? '' : `<div class="bubble-row real"><span>실가</span><b>${b.trade_price ? wonShort(b.trade_price) : '-'}</b></div>`
   const area = b.show_area
-  return `<div class="bubble ${tone} ${act}" title="${name}">${more}${ask}${real}`
+  return `<div class="bubble ${tone} ${act}" title="${name}">${title}${more}${ask}${real}`
     + `<div class="bubble-area">${area ? m2(area) : ''}</div></div>`
 }
 
