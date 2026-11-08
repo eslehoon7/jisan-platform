@@ -67,7 +67,7 @@ export default function AuctionTodo({ onChanged }) {
         <div className="todo-card">
           <div>
             <b>📅 이번 주 새 경매 확인</b>
-            <p className="muted small">마지막 확인: {days == null ? '아직 없음' : `${days}일 전`} · 탱크옥션에서 성동·영등포·송파 <b>아파트형공장(지식산업센터)</b> 새 물건을 보고, 있으면 아래 [+ 물건 등록]으로 넣어 주세요.</p>
+            <p className="muted small">마지막 확인: {days == null ? '아직 없음' : `${days}일 전`} · 탱크옥션에서 서울·경기·인천 <b>아파트형공장(지식산업센터)</b> 새 물건을 보고, 있으면 아래 [+ 물건 등록]으로 넣어 주세요.</p>
           </div>
           <button className="btn primary sm" onClick={weeklyDone}>확인 완료</button>
         </div>

@@ -444,3 +444,15 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
   border-radius: 10px 10px 0 0; text-align: center; letter-spacing: -0.2px; }
 .bubble.active .bubble-title { box-shadow: inset 0 -2px 0 #ffd43b; }
 .bubble .bubble-title ~ .bubble-row.ask { border-radius: 0; }
+
+/* 지역 바로가기 (지도 왼쪽 아래) */
+.region-jump { position: absolute; left: calc(var(--rail) + 14px); bottom: 22px; z-index: 15; display: flex; gap: 6px; }
+.region-jump select { height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 13px; font-weight: 600; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,.12); cursor: pointer; }
+@media (max-width: 760px) { .region-jump { left: 12px; bottom: 76px; } }
+
+/* 멀리서 볼 때 지역 묶음 */
+.area-chip { transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 12px; border-radius: 14px; background: #0b3d91; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3); white-space: nowrap; cursor: pointer; font-family: 'Pretendard Variable', sans-serif; line-height: 1.2; }
+.area-chip b { font-size: 13px; font-weight: 700; }
+.area-chip span { font-size: 15px; font-weight: 800; color: #ffd43b; }
+.area-chip i { font-style: normal; font-size: 11px; opacity: .9; }
+.area-chip:hover { background: #1b64da; }

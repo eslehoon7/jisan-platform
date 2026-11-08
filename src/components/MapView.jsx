@@ -1,11 +1,29 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadNaverMap } from '../lib/naverMap'
+import { useRegions, SIDO } from '../lib/regions'
 import { wonShort, m2, priceLabel } from '../lib/format'
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 
 // 축척 300m 이상(멀리)에서는 '시세 알약', 100m 이하(가까이)에서는 전체 말풍선
 export const FULL_ZOOM = 16 // 네이버 축척 16단계 = 100m, 15단계 = 300m
+export const AREA_ZOOM = 13 // 이보다 멀면(1km 이상) 건물 대신 '지역 묶음'(시·군·구별 개수·평균 평단가)
+const MAX_MARKERS = 400 // 화면 안 건물만, 최대 400개까지 그림
+
+// 지역 묶음: 시·군·구(권역)별 건물 수 + 평균 평당가
+function areaGroups(buildings) {
+  const g = {}
+  for (const b of buildings) {
+    const k = b.district || '기타'
+    const x = (g[k] ||= { name: k, n: 0, lat: 0, lng: 0, py: 0, pyN: 0 })
+    x.n++; x.lat += b.lat; x.lng += b.lng
+    if (b.last_price_per_py) { x.py += Number(b.last_price_per_py); x.pyN++ }
+  }
+  return Object.values(g).map((x) => ({ ...x, lat: x.lat / x.n, lng: x.lng / x.n, avgPy: x.pyN ? x.py / x.pyN : null }))
+}
+function areaHtml(a) {
+  return `<div class="area-chip"><b>${esc(a.name)}</b><span>${a.n}곳</span>${a.avgPy ? `<i>평당 ${wonShort(a.avgPy)}</i>` : ''}</div>`
+}
 
 // 멀리서 볼 때: 대표 시세 하나만 작게 (겹침 줄이기)
 function pillHtml(b, active, dealType) {
@@ -58,6 +76,7 @@ export default function MapView({ center, buildings, dealType, selected, vendors
   const [msg, setMsg] = useState('')
   const [zoomedOut, setZoomedOut] = useState(false)
   const [compact, setCompact] = useState(true) // 멀리서 보면 시세 알약
+  const [view, setView] = useState(null) // 지금 보이는 범위 { zoom, bounds }
 
   useEffect(() => {
     let alive = true
@@ -72,7 +91,7 @@ export default function MapView({ center, buildings, dealType, selected, vendors
         map.current = new naver.maps.Map(box.current, {
           center: new naver.maps.LatLng(center.lat, center.lng),
           zoom: center.zoom,
-          minZoom: 11,
+          minZoom: 9,
           zoomControl: true,
           zoomControlOptions: { position: naver.maps.Position.RIGHT_CENTER, style: naver.maps.ZoomControlStyle.SMALL },
           mapDataControl: false,
@@ -80,6 +99,10 @@ export default function MapView({ center, buildings, dealType, selected, vendors
         })
         naver.maps.Event.addListener(map.current, 'zoom_changed', (z) => { setZoomedOut(z < 14); setCompact(z < FULL_ZOOM) })
         setCompact(map.current.getZoom() < FULL_ZOOM)
+        // 지도를 다 움직이고 멈췄을 때만 보이는 범위를 다시 계산 (건물이 많아도 가볍게)
+        const sync = () => setView({ zoom: map.current.getZoom(), bounds: map.current.getBounds() })
+        naver.maps.Event.addListener(map.current, 'idle', sync)
+        sync()
         setStatus('ready')
       })
       .catch((e) => { setStatus('error'); setMsg(e.message) })
@@ -97,7 +120,28 @@ export default function MapView({ center, buildings, dealType, selected, vendors
     if (status !== 'ready') return
     const { naver } = window
     layers.current.buildings.forEach((m) => m.setMap(null))
-    layers.current.buildings = buildings.map((b) => {
+    layers.current.buildings = []
+    if (!view) return
+    // 멀리서 볼 때: 시·군·구 묶음 (누르면 그 지역으로 확대)
+    if (view.zoom < AREA_ZOOM) {
+      layers.current.buildings = areaGroups(buildings).map((a) => {
+        const m = new naver.maps.Marker({
+          position: new naver.maps.LatLng(a.lat, a.lng), map: map.current, zIndex: 100 + a.n,
+          icon: { content: areaHtml(a), anchor: new naver.maps.Point(0, 0) },
+        })
+        naver.maps.Event.addListener(m, 'click', () => map.current.morph(new naver.maps.LatLng(a.lat, a.lng), 14))
+        return m
+      })
+      return
+    }
+    // 가까이: 화면 안(조금 여유) 건물만 그림
+    const bd = view.bounds
+    const sw = bd.getSW(), ne = bd.getNE()
+    const padLat = (ne.lat() - sw.lat()) * 0.2, padLng = (ne.lng() - sw.lng()) * 0.2
+    const inView = buildings.filter((b) => selected?.id === b.id || (
+      b.lat >= sw.lat() - padLat && b.lat <= ne.lat() + padLat && b.lng >= sw.lng() - padLng && b.lng <= ne.lng() + padLng))
+      .slice(0, MAX_MARKERS)
+    layers.current.buildings = inView.map((b) => {
       const active = selected?.id === b.id
       const m = new naver.maps.Marker({
         position: new naver.maps.LatLng(b.lat, b.lng),
@@ -108,7 +152,7 @@ export default function MapView({ center, buildings, dealType, selected, vendors
       naver.maps.Event.addListener(m, 'click', () => onSelect(b))
       return m
     })
-  }, [buildings, selected, dealType, status, compact])
+  }, [buildings, selected, dealType, status, compact, view])
 
   // 거래유형을 바꾸면 해당 물건들이 다 보이도록 지도 범위 맞추기
   const lastType = useRef(dealType)
@@ -156,8 +200,31 @@ export default function MapView({ center, buildings, dealType, selected, vendors
   return (
     <div className={zoomedOut ? 'map zoomed-out' : 'map'}>
       <div ref={box} className="map-canvas" />
+      {status === 'ready' && <RegionJump onJump={(lat, lng, z) => map.current.morph(new window.naver.maps.LatLng(lat, lng), z)} />}
       {status === 'loading' && <div className="map-overlay">지도를 불러오는 중…</div>}
       {status === 'error' && <div className="map-overlay error">{msg}</div>}
+    </div>
+  )
+}
+
+// 지역 바로가기: 서울·경기·인천 → 시·군·구
+const SIDO_CENTER = { 서울: [37.5400, 126.9900], 경기: [37.4000, 127.1000], 인천: [37.4600, 126.7000] }
+function RegionJump({ onJump }) {
+  const R = useRegions()
+  const [sido, setSido] = useState('')
+  const list = R.list.filter((r) => r.sido === sido && r.center_lat)
+  return (
+    <div className="region-jump">
+      <select value={sido} onChange={(e) => { const v = e.target.value; setSido(v); if (SIDO_CENTER[v]) onJump(...SIDO_CENTER[v], v === '경기' ? 10 : 11) }}>
+        <option value="">📍 지역 이동</option>
+        {SIDO.map((x) => <option key={x}>{x}</option>)}
+      </select>
+      {sido && (
+        <select value="" onChange={(e) => { const r = R.by[e.target.value]; if (r) onJump(r.center_lat, r.center_lng, 14) }}>
+          <option value="">시·군·구 선택</option>
+          {list.map((r) => <option key={r.sgg_cd} value={r.sgg_cd}>{r.sgg_nm}</option>)}
+        </select>
+      )}
     </div>
   )
 }

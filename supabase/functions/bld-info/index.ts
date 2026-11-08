@@ -79,9 +79,11 @@ async function lookupLive(it: { sgg_cd: string; umd_nm: string; jibun: string })
   if (!d) return { ...it, ok: false, error: "법정동 코드를 찾지 못했어요" };
   const m = String(it.jibun).replace(/^산\s*/, "").match(/^(\d+)(?:-(\d+))?$/);
   if (!m) return { ...it, ok: false, error: "지번 형식이 달라요" };
-  const p = { sigunguCd: it.sgg_cd, bjdongCd: d.bjdong_cd, bun: m[1].padStart(4, "0"), ji: (m[2] || "0").padStart(4, "0"), numOfRows: "100", pageNo: "1" };
+  const p = { sigunguCd: it.sgg_cd, bjdongCd: d.bjdong_cd, bun: m[1].padStart(4, "0"), ji: (m[2] || "0").padStart(4, "0"), platGbCd: /^산/.test(String(it.jibun)) ? "1" : "0", numOfRows: "100", pageNo: "1" };
 
-  const title = await call("getBrTitleInfo", p);
+  // 서버가 바쁠 때 '0건'으로 답하는 경우가 있어 한 번 더 확인
+  let title = await call("getBrTitleInfo", p);
+  if (!title.items.length) { await sleep(1500); title = await call("getBrTitleInfo", p); }
   const main = title.items
     .filter((x) => !x.mainAtchGbCdNm || x.mainAtchGbCdNm === "주건축물")
     .sort((a, b) => (n(b.totArea) ?? 0) - (n(a.totArea) ?? 0));
