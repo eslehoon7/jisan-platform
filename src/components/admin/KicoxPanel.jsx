@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { lookupBld, bldKey, geocode } from '../../lib/bldInfo'
-import { SGG_DISTRICT, SGG_NAME } from './MolitPanel'
+import { useRegions, SIDO } from '../../lib/regions'
 
+const LOOKUP_MAX = 150
 // 공식 목록(한국산업단지공단 전국 지식산업센터 현황) 중 아직 지도에 없는 지산
 // - 건축완료: 건축물대장에서 층수·주차 등을 가져와 바로 등록 가능
 // - 건축중·미착공: 참고용 (나중에 분양 정보로 활용)
@@ -13,6 +14,10 @@ export default function KicoxPanel({ onRegister }) {
   const [busy, setBusy] = useState(false)
   const [showUnbuilt, setShowUnbuilt] = useState(false)
   const [bulk, setBulk] = useState('')
+  const [sido, setSido] = useState('')
+  const [sgg, setSgg] = useState('')
+  const R = useRegions()
+  const inArea = (r) => (!sgg || r.sgg_cd === sgg) && (!sido || R.by[r.sgg_cd]?.sido === sido)
 
   async function load() {
     setErr('')
@@ -24,7 +29,7 @@ export default function KicoxPanel({ onRegister }) {
 
   // 건축완료 건물만 건축물대장 조회
   useEffect(() => {
-    const todo = rows.filter((r) => r.built && !info[bldKey(r)])
+    const todo = rows.filter((r) => r.built && inArea(r)).slice(0, LOOKUP_MAX).filter((r) => !info[bldKey(r)])
     if (!todo.length) return
     let alive = true
     setBusy(true)
@@ -34,7 +39,7 @@ export default function KicoxPanel({ onRegister }) {
       .catch((e) => alive && setErr('건축물대장 조회 실패: ' + e.message))
       .finally(() => alive && setBusy(false))
     return () => { alive = false }
-  }, [rows])
+  }, [rows, sido, sgg])
 
   const nameOf = (r) => info[bldKey(r)]?.name || cleanName(r.name)
   const prefillOf = (r) => {
@@ -42,16 +47,16 @@ export default function KicoxPanel({ onRegister }) {
     const s = (v) => (v == null ? '' : String(v))
     return {
       name: nameOf(r),
-      district: SGG_DISTRICT[r.sgg_cd] || '성수',
-      address: b.road_address || r.road_address || `서울 ${SGG_NAME[r.sgg_cd]} ${r.umd_nm} ${r.jibun}`,
+      district: R.district(r.sgg_cd),
+      address: b.road_address || r.road_address || R.addr(r.sgg_cd, r.umd_nm, r.jibun),
       sgg_cd: r.sgg_cd, umd_nm: r.umd_nm, jibun: r.jibun,
       completed_year: s(b.completed_year), floors_above: s(b.floors_above), floors_below: s(b.floors_below),
       gross_area_m2: s(b.gross_area_m2 && Math.round(b.gross_area_m2 * 100) / 100), parking_spaces: s(b.parking_spaces),
     }
   }
 
-  const built = rows.filter((r) => r.built)
-  const unbuilt = rows.filter((r) => !r.built)
+  const built = rows.filter((r) => r.built && inArea(r))
+  const unbuilt = rows.filter((r) => !r.built && inArea(r))
   const ready = built.filter((r) => info[bldKey(r)]) // 대장 조회 끝난 곳
 
   async function bulkRegister() {
@@ -65,9 +70,9 @@ export default function KicoxPanel({ onRegister }) {
     for (const [i, r] of targets.entries()) {
       setBulk(`등록 중… ${i + 1} / ${targets.length}`)
       const p = prefillOf(r)
-      let pos = null
-      try {
-        pos = (await geocode(p.address)) || (await geocode(`서울 ${SGG_NAME[r.sgg_cd]} ${r.umd_nm} ${r.jibun}`))
+      let pos = r.lat ? { lat: r.lat, lng: r.lng, road: '' } : null
+      if (!pos) try {
+        pos = (await geocode(p.address)) || (await geocode(R.addr(r.sgg_cd, r.umd_nm, r.jibun)))
       } catch (e) {
         setBulk('⚠ ' + e.message + ' — 새로고침(Ctrl+F5) 후 다시 눌러 주세요' + (ok ? ` (${ok}곳은 등록됨)` : ''))
         return load()
@@ -93,12 +98,19 @@ export default function KicoxPanel({ onRegister }) {
     <div className="molit kicox">
       <div className="af-section big">📋 공식 목록 대조 — 한국산업단지공단 지식산업센터 중 아직 지도에 없는 곳</div>
       <p className="muted small">
-        성동·영등포·송파 공식 지산 목록(2025.06.30 기준)과 지도를 비교했어요. 최근 거래가 없어서 실거래 후보에 안 잡히던 건물도 여기서 찾을 수 있어요.
+        서울·경기·인천 공식 지산 목록(2025.06.30 기준)과 지도를 비교했어요. 최근 거래가 없어서 실거래 후보에 안 잡히던 건물도 여기서 찾을 수 있어요.
       </p>
       {err && <p className="molit-note err">⚠ {err}</p>}
       <p className="small">
         <b>🏢 건축완료 {built.length}곳</b> 지도에 없음
         {unbuilt.length > 0 && <> · 🏗 건축중·미착공 {unbuilt.length}곳</>}
+        <select className="molit-min" value={sido} onChange={(e) => { setSido(e.target.value); setSgg('') }}>
+          <option value="">서울·경기·인천 전체</option>{SIDO.map((s) => <option key={s}>{s}</option>)}
+        </select>
+        <select className="molit-min" value={sgg} onChange={(e) => setSgg(e.target.value)}>
+          <option value="">시·군·구 전체</option>
+          {R.list.filter((x) => !sido || x.sido === sido).map((x) => <option key={x.sgg_cd} value={x.sgg_cd}>{x.sgg_nm}</option>)}
+        </select>
         <label className="molit-all"><input type="checkbox" checked={showUnbuilt} onChange={(e) => setShowUnbuilt(e.target.checked)} /> 건축중·미착공도 보기</label>
       </p>
       <div className="molit-bulk">
@@ -116,7 +128,7 @@ export default function KicoxPanel({ onRegister }) {
             return (
               <tr key={r.id}>
                 <td className="nowrap">{r.built ? <span className="jisan-tag ok">건축완료</span> : <span className="jisan-tag field">{r.build_status || '진행중'}</span>}
-                  <b>{SGG_NAME[r.sgg_cd]} {r.umd_nm} {r.jibun}</b></td>
+                  <b>{R.name(r.sgg_cd)} {r.umd_nm} {r.jibun}</b></td>
                 <td>{cleanName(r.name)}</td>
                 <td>{!r.built ? <span className="muted small">-</span> : !b ? <span className="muted small">…</span>
                   : b.ok ? <>{b.name || <span className="muted small">(대장에 이름 없음)</span>}<div className="sub">{[b.floors_above && `지상 ${b.floors_above}층`, b.parking_spaces && `주차 ${b.parking_spaces}대`].filter(Boolean).join(' · ')}</div></>

@@ -139,13 +139,16 @@ Deno.serve(async (req) => {
     if (body.action === "dongs") {
       const found: any[] = [];
       for (const sgg of (body.sgg || SGG)) {
-        for (let c = Number(body.from) || 10100; c <= (Number(body.to) || 13000); c += 100) {
+        // 동 코드는 10100부터 100씩 이어짐 → 연속 6번 비면 그 구는 끝
+        let miss = 0;
+        for (let c = Number(body.from) || 10100; c <= (Number(body.to) || 19900); c += 100) {
           try {
-            const r = await callOnce("getBrTitleInfo", { sigunguCd: sgg, bjdongCd: String(c), numOfRows: "1", pageNo: "1" });
+            const r = await call("getBrTitleInfo", { sigunguCd: sgg, bjdongCd: String(c), numOfRows: "1", pageNo: "1" });
             const plat = r.items[0]?.platPlc;
             const dong = plat ? dongOf(plat) : "";
-            if (dong) found.push({ sgg_cd: sgg, umd_nm: dong, bjdong_cd: String(c) });
-          } catch { /* 없는 코드 */ }
+            if (dong) { found.push({ sgg_cd: sgg, umd_nm: dong, bjdong_cd: String(c) }); miss = 0; }
+            else if (++miss >= 6) break;
+          } catch { if (++miss >= 6) break; }
         }
       }
       if (found.length) await db.from("bjdong_codes").upsert(found, { onConflict: "sgg_cd,umd_nm" });

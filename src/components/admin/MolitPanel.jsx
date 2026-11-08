@@ -3,12 +3,12 @@ import { supabase } from '../../lib/supabase'
 import { CONFIG } from '../../config'
 import { wonShort } from '../../lib/format'
 import { lookupBld, bldKey, geocode } from '../../lib/bldInfo'
+import { useRegions, SIDO } from '../../lib/regions'
 
 // 국토부 실거래 자동수집 현황 + 건물 후보
 // - 매일 새벽 3시 10분 자동 수집 (최근 2개월 다시 확인 → 늦은 신고·계약해제 반영)
 // - [지금 수집]: 관리자가 바로 실행
-export const SGG_DISTRICT = { '11200': '성수', '11560': '영등포', '11710': '송파' }
-export const SGG_NAME = { '11200': '성동구', '11560': '영등포구', '11710': '송파구' }
+const LOOKUP_MAX = 150 // 건축물대장은 화면에 보이는 후보 중 앞쪽 150곳만 자동 조회 (하루 조회 한도 보호)
 
 export default function MolitPanel({ onRegister }) {
   const [stats, setStats] = useState(null)
@@ -22,6 +22,9 @@ export default function MolitPanel({ onRegister }) {
   const [info, setInfo] = useState({}) // 건축물대장 결과 (지번별)
   const [infoBusy, setInfoBusy] = useState(false)
   const [bulk, setBulk] = useState('') // 한꺼번에 등록 진행 문구
+  const [sido, setSido] = useState('')
+  const [sgg, setSgg] = useState('')
+  const R = useRegions()
 
   async function load() {
     const c = (q) => q.then((r) => r.count ?? 0)
@@ -41,8 +44,9 @@ export default function MolitPanel({ onRegister }) {
   useEffect(() => { load() }, [minCount, showAll])
 
   // 후보가 바뀌면 아직 모르는 건물만 건축물대장에서 이름·층수 등 가져오기
+  const shown = cands.filter((c) => (!sgg || c.sgg_cd === sgg) && (!sido || R.by[c.sgg_cd]?.sido === sido))
   useEffect(() => {
-    const todo = cands.filter((c) => !info[bldKey(c)])
+    const todo = shown.slice(0, LOOKUP_MAX).filter((c) => !info[bldKey(c)])
     if (!todo.length) return
     let alive = true
     setInfoBusy(true)
@@ -52,15 +56,15 @@ export default function MolitPanel({ onRegister }) {
       .catch((e) => alive && setCandErr('건축물대장 조회 실패: ' + e.message))
       .finally(() => alive && setInfoBusy(false))
     return () => { alive = false }
-  }, [cands])
+  }, [cands, sido, sgg])
 
   const prefillOf = (c) => {
     const b = info[bldKey(c)] || {}
     const s = (v) => (v == null ? '' : String(v))
     return {
       name: b.name || '',
-      district: SGG_DISTRICT[c.sgg_cd] || '성수',
-      address: b.road_address || `서울 ${SGG_NAME[c.sgg_cd] || c.sgg_nm} ${c.umd_nm} ${c.jibun}`,
+      district: R.district(c.sgg_cd),
+      address: b.road_address || R.addr(c.sgg_cd, c.umd_nm, c.jibun),
       sgg_cd: c.sgg_cd, umd_nm: c.umd_nm, jibun: c.jibun,
       completed_year: s(b.completed_year || c.build_year), floors_above: s(b.floors_above), floors_below: s(b.floors_below),
       gross_area_m2: s(b.gross_area_m2 && Math.round(b.gross_area_m2 * 100) / 100), parking_spaces: s(b.parking_spaces),
@@ -69,7 +73,7 @@ export default function MolitPanel({ onRegister }) {
 
   // 지산 후보를 한꺼번에 등록 (건물명이 확인된 곳만)
   async function bulkRegister() {
-    const targets = cands.filter((c) => c.is_jisan && info[bldKey(c)]?.ok && info[bldKey(c)]?.name)
+    const targets = shown.filter((c) => c.is_jisan && info[bldKey(c)]?.ok && info[bldKey(c)]?.name)
     if (!targets.length) return setBulk('⚠ 등록할 건물이 없어요 (건물명을 아직 못 가져왔어요)')
     if (!window.confirm(`지산 ${targets.length}곳을 건물로 한꺼번에 등록할까요?\n등록하면 바로 지도에 나오고, 실거래가 자동으로 붙어요.`)) return
     let ok = 0, dup = 0, fail = []
@@ -78,7 +82,7 @@ export default function MolitPanel({ onRegister }) {
       const p = prefillOf(c)
       let pos = null
       try {
-        pos = (await geocode(p.address)) || (await geocode(`서울 ${SGG_NAME[c.sgg_cd]} ${c.umd_nm} ${c.jibun}`))
+        pos = (await geocode(p.address)) || (await geocode(R.addr(c.sgg_cd, c.umd_nm, c.jibun)))
       } catch (e) {
         setBulk('⚠ ' + e.message + ' — 새로고침(Ctrl+F5) 후 다시 눌러 주세요' + (ok ? ` (${ok}곳은 등록됨)` : ''))
         return load()
@@ -125,11 +129,11 @@ export default function MolitPanel({ onRegister }) {
       <div className="molit-head">
         <div>
           <h3>🤖 국토부 실거래 자동수집</h3>
-          <p className="muted small">매일 <b>새벽 3시 10분</b>에 성동·영등포·송파구 거래를 자동으로 가져와요. 최근 2개월은 매번 다시 확인해서 늦은 신고·계약 해제도 반영돼요.</p>
+          <p className="muted small">매일 <b>새벽 3시 10분</b>에 <b>서울·경기·인천</b> 전체 거래를 자동으로 가져와요. 최근 2개월은 매번 다시 확인해서 늦은 신고·계약 해제도 반영돼요.</p>
         </div>
         <div className="molit-btns">
           <button className="btn primary sm" disabled={!!busy} onClick={() => run(2)}>{busy === 'now' ? '수집 중…' : '지금 수집'}</button>
-          <button className="btn white sm" disabled={!!busy} onClick={() => run(24)} title="최근 24개월을 다시 가져와요 (1~2분)">{busy === 'back' ? '수집 중… (1~2분)' : '과거 2년 다시 수집'}</button>
+          <button className="btn white sm" disabled={!!busy} onClick={() => run(24)} title="최근 24개월을 다시 가져와요. 지역이 많아서 백그라운드로 1~2시간 걸려요">{busy === 'back' ? '예약 중…' : '과거 2년 다시 수집'}</button>
         </div>
       </div>
       {note && <p className={note.startsWith('⚠') ? 'molit-note err' : 'molit-note'}>{note}</p>}
@@ -172,32 +176,40 @@ export default function MolitPanel({ onRegister }) {
         <select className="molit-min" value={minCount} onChange={(e) => setMinCount(Number(e.target.value))}>
           <option value={1}>1건 이상</option><option value={3}>3건 이상</option><option value={5}>5건 이상</option><option value={10}>10건 이상</option>
         </select>
+        <select className="molit-min" value={sido} onChange={(e) => { setSido(e.target.value); setSgg('') }}>
+          <option value="">서울·경기·인천 전체</option>{SIDO.map((s) => <option key={s}>{s}</option>)}
+        </select>
+        <select className="molit-min" value={sgg} onChange={(e) => setSgg(e.target.value)}>
+          <option value="">시·군·구 전체</option>
+          {R.list.filter((r) => !sido || r.sido === sido).map((r) => <option key={r.sgg_cd} value={r.sgg_cd}>{r.sgg_nm}</option>)}
+        </select>
         <label className="molit-all"><input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} /> 상가·호텔 등 지산 아닌 건물도 보기</label>
       </div>
       <p className="muted small"><b>🏭 지산 추정</b> = '공장' 호실 거래가 있는 건물이에요. [건물로 등록]을 누르면 주소·지번이 채워진 등록 화면이 열려요. 등록하면 그 건물의 과거 거래가 <b>자동으로 실거래 탭과 말풍선 '실가'</b>에 붙어요.</p>
-      {!!cands.length && (
-        <p className="small"><b>🏭 지산 추정 {cands.filter((c) => c.is_jisan).length}곳</b>
-          {showAll && <> · 상가·기타 {cands.filter((c) => !c.is_jisan).length}곳 (지산 목록 아래에 이어서 나와요)</>}</p>
+      {!!shown.length && (
+        <p className="small"><b>🏭 지산 추정 {shown.filter((c) => c.is_jisan).length}곳</b>
+          {showAll && <> · 상가·기타 {shown.filter((c) => !c.is_jisan).length}곳 (지산 목록 아래에 이어서 나와요)</>}
+          {shown.length > LOOKUP_MAX && <span className="muted"> · 건축물대장은 앞쪽 {LOOKUP_MAX}곳만 자동 조회해요 (위에서 시·군·구를 고르면 그 지역을 조회)</span>}</p>
       )}
       {candErr && <p className="molit-note err">⚠ {candErr}</p>}
       <div className="molit-bulk">
         <span className="muted small">{infoBusy ? '⏳ 건축물대장에서 건물명·층수·주차를 불러오는 중…' : '건물명·준공·층수·주차는 국토부 건축물대장에서 자동으로 가져와요.'}</span>
         <button className="btn primary sm" disabled={infoBusy || bulk.startsWith('등록 중')} onClick={bulkRegister}>
-          🏭 지산 {cands.filter((c) => c.is_jisan && info[bldKey(c)]?.name).length}곳 한꺼번에 등록
+          🏭 지산 {shown.filter((c) => c.is_jisan && info[bldKey(c)]?.ok && info[bldKey(c)]?.name).length}곳 한꺼번에 등록
         </button>
       </div>
-      {cands.some((c) => c.is_jisan && info[bldKey(c)]?.ok && !info[bldKey(c)]?.name) && (
-        <p className="muted small">📝 <b>현장 확인 필요</b> {cands.filter((c) => c.is_jisan && info[bldKey(c)]?.ok && !info[bldKey(c)]?.name).length}곳은 건축물대장에 건물명이 없어서 한꺼번에 등록에서 빠져요. 현장에서 이름을 확인한 뒤 그 줄의 <b>[건물로 등록]</b>으로 직접 넣어 주세요 (주소·층수·주차는 미리 채워져요).</p>
+      {shown.some((c) => c.is_jisan && info[bldKey(c)]?.ok && !info[bldKey(c)]?.name) && (
+        <p className="muted small">📝 <b>현장 확인 필요</b> {shown.filter((c) => c.is_jisan && info[bldKey(c)]?.ok && !info[bldKey(c)]?.name).length}곳은 건축물대장에 건물명이 없어서 한꺼번에 등록에서 빠져요. 현장에서 이름을 확인한 뒤 그 줄의 <b>[건물로 등록]</b>으로 직접 넣어 주세요 (주소·층수·주차는 미리 채워져요).</p>
       )}
       {bulk && <p className={bulk.startsWith('⚠') ? 'molit-note err' : 'molit-note'}>{bulk}</p>}
       <table className="atable static cand">
         <thead><tr><th>위치 (지번)</th><th>건물명 (건축물대장)</th><th>거래</th><th>준공</th><th>용도</th><th>면적</th><th>평당 평균</th><th>최근</th><th></th></tr></thead>
         <tbody>
-          {cands.map((c) => (
+          {shown.map((c) => (
             <tr key={`${c.sgg_cd}-${c.umd_nm}-${c.jibun}`}>
               <td className="nowrap">
                 {c.is_jisan ? <span className="jisan-tag">🏭 지산 추정</span> : <span className="jisan-tag other">상가·기타</span>}
-                <b>{SGG_NAME[c.sgg_cd] || c.sgg_nm} {c.umd_nm} {c.jibun}</b>
+                <b>{R.name(c.sgg_cd) || c.sgg_nm} {c.umd_nm} {c.jibun}</b>
               </td>
               <td><BldName b={info[bldKey(c)]} /></td>
               <td>{c.trade_count}건{c.is_jisan && <div className="sub">공장 {c.factory_count}</div>}</td>
@@ -209,7 +221,7 @@ export default function MolitPanel({ onRegister }) {
               <td><button className="btn dark sm" onClick={() => onRegister?.(prefillOf(c))}>건물로 등록</button></td>
             </tr>
           ))}
-          {!cands.length && <tr><td colSpan="9" className="empty-cell">{showAll ? '조건에 맞는 후보가 없어요' : '지산 후보가 없어요 — 아래 체크박스로 다른 건물도 볼 수 있어요'}</td></tr>}
+          {!shown.length && <tr><td colSpan="9" className="empty-cell">{showAll ? '조건에 맞는 후보가 없어요' : '지산 후보가 없어요 — 아래 체크박스로 다른 건물도 볼 수 있어요'}</td></tr>}
         </tbody>
       </table>
     </div>

@@ -3,14 +3,14 @@ import { supabase } from '../../lib/supabase'
 import { loadNaverMap } from '../../lib/naverMap'
 import { Field, Toast } from './ui'
 import { lookupBld } from '../../lib/bldInfo'
+import { useRegions, loadRegions, SIDO } from '../../lib/regions'
 
-const EMPTY = { id: null, name: '', district: '성수', address: '', lat: null, lng: null, completed_year: '', floors_above: '', floors_below: '',
+const EMPTY = { id: null, name: '', district: '', address: '', lat: null, lng: null, completed_year: '', floors_above: '', floors_below: '',
   gross_area_m2: '', parking_spaces: '', transit: '', description: '', is_published: true, sgg_cd: '', umd_nm: '', jibun: '' }
-const SGG = [['11200', '성동구'], ['11560', '영등포구'], ['11710', '송파구']]
-const SGG_BY_NAME = Object.fromEntries(SGG.map(([c, n]) => [n, c]))
 const num = (v) => (v === '' || v == null ? null : Number(v))
 
 export default function BuildingsAdmin({ prefill }) {
+  const R = useRegions()
   const [rows, setRows] = useState([])
   const [form, setForm] = useState(null)
   const [msg, setMsg] = useState('')
@@ -50,6 +50,7 @@ export default function BuildingsAdmin({ prefill }) {
   async function save() {
     if (!form.name || !form.address) return flash('⚠ 건물명과 주소는 꼭 넣어 주세요')
     if (form.lat == null) return flash('⚠ [주소로 위치 찾기]를 눌러 지도 위치를 정해 주세요')
+    if (!form.district) return flash('⚠ 권역을 골라 주세요')
     const row = {
       name: form.name.trim(), district: form.district, address: form.address.trim(),
       location: `SRID=4326;POINT(${form.lng} ${form.lat})`,
@@ -101,7 +102,8 @@ export default function BuildingsAdmin({ prefill }) {
             <Field label="건물명 *" wide><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="예: 성수 SK V1 타워" /></Field>
             <Field label="권역 *">
               <select value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
-                <option>성수</option><option>영등포</option><option>송파</option>
+                <option value="">선택 (구를 고르면 자동)</option>
+                {SIDO.map((sd) => <optgroup key={sd} label={sd}>{R.list.filter((r) => r.sido === sd).map((r) => <option key={r.sgg_cd} value={r.label}>{r.label}</option>)}</optgroup>)}
               </select>
             </Field>
             <Field label="공개 여부">
@@ -111,10 +113,10 @@ export default function BuildingsAdmin({ prefill }) {
             </Field>
             <AddressPicker form={form} setForm={setForm} />
             <div className="af-section wide">국토부 실거래 자동 연결 <small>— 주소로 위치를 찾으면 자동으로 채워져요. 지번이 맞아야 실거래가 붙어요.</small></div>
-            <Field label="구">
-              <select value={form.sgg_cd} onChange={(e) => setForm({ ...form, sgg_cd: e.target.value })}>
+            <Field label="시·군·구">
+              <select value={form.sgg_cd} onChange={(e) => setForm({ ...form, sgg_cd: e.target.value, district: form.district || R.district(e.target.value) })}>
                 <option value="">선택</option>
-                {SGG.map(([c, n]) => <option key={c} value={c}>{n}</option>)}
+                {SIDO.map((sd) => <optgroup key={sd} label={sd}>{R.list.filter((r) => r.sido === sd).map((r) => <option key={r.sgg_cd} value={r.sgg_cd}>{r.sgg_nm}</option>)}</optgroup>)}
               </select>
             </Field>
             <Field label="법정동"><input value={form.umd_nm} onChange={(e) => setForm({ ...form, umd_nm: e.target.value })} placeholder="성수동2가" /></Field>
@@ -171,10 +173,19 @@ export function AddressPicker({ form, setForm }) {
       setErr('')
       const pos = new naver.maps.LatLng(Number(a.y), Number(a.x))
       marker.current.setPosition(pos); marker.current.setMap(map.current); map.current.setCenter(pos); map.current.setZoom(17)
-      // 지번 주소 "서울특별시 성동구 성수동2가 289-10" → 구·법정동·지번 (건물 등록 화면에서만)
-      const m = (a.jibunAddress || '').match(/(\S+구)\s+(\S+)\s+(?:산\s*)?(\d+(?:-\d+)?)\s*$/)
-      setForm((f) => ({ ...f, lat: Number(a.y), lng: Number(a.x), address: a.roadAddress || f.address,
-        ...('jibun' in f && m ? { sgg_cd: SGG_BY_NAME[m[1]] || f.sgg_cd, umd_nm: m[2], jibun: m[3] } : {}) }))
+      setForm((f) => ({ ...f, lat: Number(a.y), lng: Number(a.x), address: a.roadAddress || f.address }))
+      // 지번 주소 → 시군구·법정동·지번 (건물 등록 화면에서만). 예) 경기도 수원시 영통구 / 매탄동 / 416  또는  김포시 / 양촌읍 학운리 / 2980
+      if (!('jibun' in form)) return
+      const el = Object.fromEntries((a.addressElements || []).map((x) => [x.types?.[0], x.longName]))
+      const dong = [el.DONGMYUN, el.RI].filter(Boolean).join(' ')
+      const land = (el.LAND_NUMBER || '').replace(/^산\s*/, '')
+      loadRegions().then((list) => {
+        const sido = (el.SIDO || '').slice(0, 2)
+        const r = list.find((x) => x.sido === sido && x.sgg_nm === el.SIGUGUN)
+        setForm((f) => ({ ...f,
+          ...(r ? { sgg_cd: r.sgg_cd, district: f.district || r.label } : {}),
+          ...(dong ? { umd_nm: dong } : {}), ...(/^\d+(-\d+)?$/.test(land) ? { jibun: land } : {}) }))
+      }).catch(() => {})
     })
   }
 
