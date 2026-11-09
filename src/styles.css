@@ -460,3 +460,16 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .region-jump { display: flex; gap: 6px; }
 .region-jump select { flex: 1; min-width: 0; }
 @media (max-width: 760px) { .search-col { width: 100%; } }
+
+/* 건물 기본정보: 시세 요약 */
+.price-box { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 16px; background: var(--bg-2); }
+.pb-main span { display: block; font-size: 12px; color: var(--ink-3); }
+.pb-main strong { font-size: 22px; font-weight: 800; color: var(--ink); }
+.pb-main small { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.pb-main .up { color: #e03131; } .pb-main .down { color: #1b64da; }
+.pb-bars { display: flex; align-items: flex-end; gap: 8px; height: 80px; margin: 12px 0 6px; }
+.pb-bars > div { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.pb-bars i { display: block; width: 100%; max-width: 28px; background: #1b64da; border-radius: 4px 4px 0 0; opacity: .85; }
+.pb-bars > div:last-child i { background: #0b3d91; opacity: 1; }
+.pb-bars span { font-size: 11px; color: var(--ink-3); }
+.sheet .facts > div { grid-template-columns: 96px 1fr; }

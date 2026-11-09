@@ -66,8 +66,8 @@ async function isAdmin(req: Request) {
 
 const n = (v: any) => (v === undefined || v === null || v === "" ? null : Number(v));
 
-async function lookup(it: { sgg_cd: string; umd_nm: string; jibun: string }) {
-  const { data: c } = await db.from("bld_registry_cache").select("data").eq("sgg_cd", it.sgg_cd).eq("umd_nm", it.umd_nm).eq("jibun", it.jibun).maybeSingle();
+async function lookup(it: { sgg_cd: string; umd_nm: string; jibun: string }, fresh = false) {
+  const { data: c } = fresh ? { data: null } : await db.from("bld_registry_cache").select("data").eq("sgg_cd", it.sgg_cd).eq("umd_nm", it.umd_nm).eq("jibun", it.jibun).maybeSingle();
   if (c?.data) return { ...it, ...c.data, cached: true };
   const r = await lookupLive(it);
   if (r.ok) await db.from("bld_registry_cache").upsert({ sgg_cd: it.sgg_cd, umd_nm: it.umd_nm, jibun: it.jibun, data: r, fetched_at: new Date().toISOString() });
@@ -118,6 +118,16 @@ async function lookupLive(it: { sgg_cd: string; umd_nm: string; jibun: string })
     main_use: src.mainPurpsCdNm || null,
     is_jisan: /지식산업센터|아파트형공장/.test(purps),
     building_count: title.items.filter((x) => x.mainAtchGbCdNm === "주건축물").length || title.items.length,
+    // 상세 정보 (건물 화면용)
+    plat_area_m2: n(recap?.platArea) || n(src.platArea),
+    arch_area_m2: n(recap?.archArea) || main.reduce((s, x) => s + (n(x.archArea) ?? 0), 0) || n(src.archArea),
+    bc_rat: n(recap?.bcRat) || n(src.bcRat),
+    vl_rat: n(recap?.vlRat) || n(src.vlRat),
+    structure: src.strctCdNm || null,
+    elevators: main.reduce((s, x) => s + (n(x.rideUseElvtCnt) ?? 0) + (n(x.emgenUseElvtCnt) ?? 0), 0) || null,
+    units: main.reduce((s, x) => s + (n(x.hoCnt) ?? 0), 0) || n(recap?.hoCnt) || null,
+    use_apr_day: /^\d{8}$/.test(day) ? `${day.slice(0, 4)}-${day.slice(4, 6)}-${day.slice(6, 8)}` : null,
+    etc_purps: [...new Set(main.map((x) => (x.etcPurps || "").trim()).filter(Boolean))].join(", ").slice(0, 200) || null,
   };
 }
 
@@ -161,7 +171,7 @@ Deno.serve(async (req) => {
       const items = (body.items || []).slice(0, 100);
       const out = [];
       for (const it of items) {
-        try { out.push(await lookup(it)); } catch (e) { out.push({ ...it, ok: false, error: (e as Error).message }); }
+        try { out.push(await lookup(it, !!body.fresh)); } catch (e) { out.push({ ...it, ok: false, error: (e as Error).message }); }
         await sleep(150);
       }
       return json({ ok: true, results: out });
