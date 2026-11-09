@@ -32,7 +32,7 @@ button:disabled { cursor: not-allowed; }
 .rail-label { font-size: 11px; font-weight: 600; letter-spacing: -.3px; }
 
 /* 상단 떠 있는 검색·필터 */
-.topbar { position: absolute; top: 14px; left: calc(var(--rail) + 14px); z-index: 20; display: flex; gap: 8px; align-items: center; transition: left .2s; }
+.topbar { position: absolute; top: 14px; left: calc(var(--rail) + 14px); z-index: 20; display: flex; gap: 8px; align-items: flex-start; transition: left .2s; }
 .topbar.shifted { left: calc(var(--rail) + var(--sheet) + 14px); }
 .search { display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 12px; padding: 0 14px; height: 44px; width: 300px; box-shadow: var(--shadow); }
 .search input { border: 0; outline: 0; font: inherit; font-size: 14px; flex: 1; min-width: 0; }
@@ -446,9 +446,7 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .bubble .bubble-title ~ .bubble-row.ask { border-radius: 0; }
 
 /* 지역 바로가기 (지도 왼쪽 아래) */
-.region-jump { position: absolute; left: calc(var(--rail) + 14px); bottom: 22px; z-index: 15; display: flex; gap: 6px; }
 .region-jump select { height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; font-size: 13px; font-weight: 600; color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,.12); cursor: pointer; }
-@media (max-width: 760px) { .region-jump { left: 12px; bottom: 76px; } }
 
 /* 멀리서 볼 때 지역 묶음 */
 .area-chip { transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 12px; border-radius: 14px; background: #0b3d91; color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,.3); white-space: nowrap; cursor: pointer; font-family: 'Pretendard Variable', sans-serif; line-height: 1.2; }
@@ -456,3 +454,9 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .area-chip span { font-size: 15px; font-weight: 800; color: #ffd43b; }
 .area-chip i { font-style: normal; font-size: 11px; opacity: .9; }
 .area-chip:hover { background: #1b64da; }
+
+/* 지역 이동: 검색창 바로 밑 */
+.search-col { display: flex; flex-direction: column; gap: 6px; }
+.region-jump { display: flex; gap: 6px; }
+.region-jump select { flex: 1; min-width: 0; }
+@media (max-width: 760px) { .search-col { width: 100%; } }

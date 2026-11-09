@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadNaverMap } from '../lib/naverMap'
-import { useRegions, SIDO } from '../lib/regions'
 import { wonShort, m2, priceLabel } from '../lib/format'
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
@@ -103,6 +102,8 @@ export default function MapView({ center, buildings, dealType, selected, vendors
         const sync = () => setView({ zoom: map.current.getZoom(), bounds: map.current.getBounds() })
         naver.maps.Event.addListener(map.current, 'idle', sync)
         sync()
+        // 검색창 밑 '지역 이동'에서 보내는 이동 요청
+        window.addEventListener('map-jump', (e) => map.current.morph(new naver.maps.LatLng(e.detail.lat, e.detail.lng), e.detail.zoom))
         setStatus('ready')
       })
       .catch((e) => { setStatus('error'); setMsg(e.message) })
@@ -200,31 +201,9 @@ export default function MapView({ center, buildings, dealType, selected, vendors
   return (
     <div className={zoomedOut ? 'map zoomed-out' : 'map'}>
       <div ref={box} className="map-canvas" />
-      {status === 'ready' && <RegionJump onJump={(lat, lng, z) => map.current.morph(new window.naver.maps.LatLng(lat, lng), z)} />}
       {status === 'loading' && <div className="map-overlay">지도를 불러오는 중…</div>}
       {status === 'error' && <div className="map-overlay error">{msg}</div>}
     </div>
   )
 }
 
-// 지역 바로가기: 서울·경기·인천 → 시·군·구
-const SIDO_CENTER = { 서울: [37.5400, 126.9900], 경기: [37.4000, 127.1000], 인천: [37.4600, 126.7000] }
-function RegionJump({ onJump }) {
-  const R = useRegions()
-  const [sido, setSido] = useState('')
-  const list = R.list.filter((r) => r.sido === sido && r.center_lat)
-  return (
-    <div className="region-jump">
-      <select value={sido} onChange={(e) => { const v = e.target.value; setSido(v); if (SIDO_CENTER[v]) onJump(...SIDO_CENTER[v], v === '경기' ? 10 : 11) }}>
-        <option value="">📍 지역 이동</option>
-        {SIDO.map((x) => <option key={x}>{x}</option>)}
-      </select>
-      {sido && (
-        <select value="" onChange={(e) => { const r = R.by[e.target.value]; if (r) onJump(r.center_lat, r.center_lng, 14) }}>
-          <option value="">시·군·구 선택</option>
-          {list.map((r) => <option key={r.sgg_cd} value={r.sgg_cd}>{r.sgg_nm}</option>)}
-        </select>
-      )}
-    </div>
-  )
-}
