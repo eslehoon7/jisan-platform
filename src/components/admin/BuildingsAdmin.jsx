@@ -6,7 +6,10 @@ import { lookupBld } from '../../lib/bldInfo'
 import { useRegions, loadRegions, SIDO } from '../../lib/regions'
 
 const EMPTY = { id: null, name: '', district: '', address: '', lat: null, lng: null, completed_year: '', floors_above: '', floors_below: '',
-  gross_area_m2: '', parking_spaces: '', transit: '', description: '', is_published: true, sgg_cd: '', umd_nm: '', jibun: '' }
+  gross_area_m2: '', parking_spaces: '', transit: '', description: '', is_published: true, sgg_cd: '', umd_nm: '', jibun: '',
+  ceiling_height_m: '', drive_in: '', freight_elevators: '', floor_load_t: '', mgmt_fee_per_py: '', rent_per_py: '', deposit_per_py: '',
+  allowed_industries: '', site_note: '', site_checked_at: '' }
+const SITE_KEYS = ['ceiling_height_m', 'drive_in', 'freight_elevators', 'floor_load_t', 'mgmt_fee_per_py', 'rent_per_py', 'deposit_per_py', 'allowed_industries', 'site_note', 'site_checked_at']
 const num = (v) => (v === '' || v == null ? null : Number(v))
 
 export default function BuildingsAdmin({ prefill }) {
@@ -40,10 +43,11 @@ export default function BuildingsAdmin({ prefill }) {
   }
 
   async function openRow(r) {
-    const { data } = await supabase.from('buildings').select('sgg_cd, umd_nm, jibun').eq('id', r.id).maybeSingle()
+    const { data } = await supabase.from('buildings').select('sgg_cd, umd_nm, jibun, ceiling_height_m, drive_in, freight_elevators, floor_load_t, mgmt_fee_per_py, rent_per_py, deposit_per_py, allowed_industries, site_note, site_checked_at').eq('id', r.id).maybeSingle()
     setForm({ ...EMPTY, ...r, completed_year: r.completed_year ?? '', floors_above: r.floors_above ?? '', floors_below: r.floors_below ?? '',
       gross_area_m2: r.gross_area_m2 ?? '', parking_spaces: r.parking_spaces ?? '', transit: r.transit ?? '', description: r.description ?? '',
-      sgg_cd: data?.sgg_cd ?? '', umd_nm: data?.umd_nm ?? '', jibun: data?.jibun ?? '' })
+      sgg_cd: data?.sgg_cd ?? '', umd_nm: data?.umd_nm ?? '', jibun: data?.jibun ?? '',
+      ...Object.fromEntries(SITE_KEYS.map((k) => [k, data?.[k] ?? ''])) })
   }
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 2500) }
 
@@ -58,6 +62,11 @@ export default function BuildingsAdmin({ prefill }) {
       gross_area_m2: num(form.gross_area_m2), parking_spaces: num(form.parking_spaces),
       transit: form.transit || null, description: form.description || null, is_published: form.is_published,
       sgg_cd: form.sgg_cd || null, umd_nm: form.umd_nm?.trim() || null, jibun: form.jibun?.trim() || null,
+      // 현장 확인 정보
+      ceiling_height_m: num(form.ceiling_height_m), drive_in: form.drive_in || null, freight_elevators: num(form.freight_elevators),
+      floor_load_t: num(form.floor_load_t), mgmt_fee_per_py: num(form.mgmt_fee_per_py), rent_per_py: num(form.rent_per_py),
+      deposit_per_py: num(form.deposit_per_py), allowed_industries: form.allowed_industries?.trim() || null,
+      site_note: form.site_note?.trim() || null, site_checked_at: form.site_checked_at || null,
     }
     const { error } = form.id
       ? await supabase.from('buildings').update(row).eq('id', form.id)
@@ -129,6 +138,21 @@ export default function BuildingsAdmin({ prefill }) {
             <Field label="연면적 (㎡)"><input inputMode="decimal" value={form.gross_area_m2} onChange={(e) => setForm({ ...form, gross_area_m2: e.target.value.replace(/[^\d.]/g, '') })} /></Field>
             <Field label="교통"><input value={form.transit} onChange={(e) => setForm({ ...form, transit: e.target.value })} placeholder="2호선 성수역 도보 5분" /></Field>
             <Field label="소개" wide><textarea rows="3" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+            <div className="af-section wide">🔎 현장 확인 정보 <small>— 직접 방문해서 확인한 내용. 넣은 것만 건물 화면에 보여요.</small></div>
+            <Field label="확인한 날"><input type="date" value={form.site_checked_at} onChange={(e) => setForm({ ...form, site_checked_at: e.target.value })} /></Field>
+            <Field label="층고 (m)"><input inputMode="decimal" value={form.ceiling_height_m} onChange={(e) => setForm({ ...form, ceiling_height_m: e.target.value.replace(/[^\d.]/g, '') })} placeholder="5.4" /></Field>
+            <Field label="드라이브인">
+              <select value={form.drive_in} onChange={(e) => setForm({ ...form, drive_in: e.target.value })}>
+                <option value="">모름</option><option>드라이브인</option><option>도어투도어</option><option>드라이브인 + 도어투도어</option><option>없음</option>
+              </select>
+            </Field>
+            <Field label="화물 엘리베이터 (대)"><input inputMode="numeric" value={form.freight_elevators} onChange={(e) => setForm({ ...form, freight_elevators: e.target.value.replace(/\D/g, '') })} /></Field>
+            <Field label="바닥하중 (톤/㎡)"><input inputMode="decimal" value={form.floor_load_t} onChange={(e) => setForm({ ...form, floor_load_t: e.target.value.replace(/[^\d.]/g, '') })} placeholder="1.2" /></Field>
+            <Field label="관리비 (원/평, 월)"><input inputMode="numeric" value={form.mgmt_fee_per_py} onChange={(e) => setForm({ ...form, mgmt_fee_per_py: e.target.value.replace(/\D/g, '') })} placeholder="5000" /></Field>
+            <Field label="임대료 (원/평, 월)"><input inputMode="numeric" value={form.rent_per_py} onChange={(e) => setForm({ ...form, rent_per_py: e.target.value.replace(/\D/g, '') })} placeholder="40000" /></Field>
+            <Field label="보증금 (원/평)"><input inputMode="numeric" value={form.deposit_per_py} onChange={(e) => setForm({ ...form, deposit_per_py: e.target.value.replace(/\D/g, '') })} placeholder="400000" /></Field>
+            <Field label="입주 가능 업종" wide><input value={form.allowed_industries} onChange={(e) => setForm({ ...form, allowed_industries: e.target.value })} placeholder="제조업, 지식산업, 정보통신업 (산업단지 내 제한 등)" /></Field>
+            <Field label="현장 메모" wide><textarea rows="2" value={form.site_note} onChange={(e) => setForm({ ...form, site_note: e.target.value })} placeholder="예) 저층 드라이브인 호실 위주, 주차 진입로 좁음" /></Field>
           </div>
           <div className="af-actions">
             <button className="btn white" onClick={() => setForm(null)}>취소</button>

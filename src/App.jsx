@@ -206,7 +206,7 @@ export default function App() {
           onClose={() => setSelected(null)}
           onLogin={() => setAuthOpen(true)}
           onVendors={setVendors}
-          initialTab={menu === '입주' ? '주변 업체' : dealType === '매매' ? '기본정보' : '매물·분양'}
+          initialTab={menu === '입주' ? '주변 업체' : dealType === '매매' ? '정보' : '매물·분양'}
         />
       ) : listOpen ? (
         <BuildingList

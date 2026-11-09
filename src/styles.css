@@ -478,3 +478,64 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .pb-years span { color: var(--ink-3); font-size: 13px; }
 .pb-years b { font-weight: 700; color: var(--ink); }
 .pb-years em { font-style: normal; color: var(--ink-3); font-size: 12px; }
+
+/* 건물 정보 탭 */
+.binfo { display: grid; gap: 14px; }
+.binfo h4 { margin: 0 0 8px; font-size: 15px; font-weight: 700; display: flex; align-items: baseline; gap: 6px; }
+.binfo .box { border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.binfo .center { text-align: center; margin: 8px 0 0; }
+.pcards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pcard { border: 1px solid var(--line); border-radius: 12px; padding: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.pcard.main { border: 2px solid var(--brand); }
+.pcard span { font-size: 12px; color: var(--ink-3); }
+.pcard strong { font-size: 19px; font-weight: 800; letter-spacing: -.5px; }
+.pcard small { font-size: 12px; color: var(--ink-2); }
+.pcard .tag { font-style: normal; font-size: 11px; padding: 3px 8px; border-radius: 99px; background: var(--bg-2); color: var(--ink-2); margin-top: 4px; }
+.pcard .tag.hot { background: #e5383b; color: #fff; font-weight: 700; }
+.linkish { border: 0; background: none; color: var(--brand); font-size: 13px; font-weight: 600; padding: 4px 0; }
+.big-line { margin: 0 0 4px; font-size: 15px; }
+.big-line b { color: var(--brand); }
+.binfo .up { color: var(--up); } .binfo .down { color: var(--down); }
+.rank-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 2px; }
+.rank-list li { display: grid; grid-template-columns: 1fr auto 72px; gap: 8px; align-items: baseline; font-size: 13px; padding: 5px 6px; border-radius: 6px; }
+.rank-list li.me { background: var(--brand-2); font-weight: 700; }
+.rank-list em { font-style: normal; color: var(--ink-3); font-size: 12px; }
+.rank-list b { text-align: right; }
+.score { margin: 0; display: grid; gap: 8px; }
+.score > div { display: grid; grid-template-columns: 72px 1fr; align-items: baseline; }
+.score dt { font-size: 13px; color: var(--ink-3); }
+.score dd { margin: 0; display: flex; flex-direction: column; }
+.score .stars { color: #f59f00; letter-spacing: 1px; font-size: 15px; }
+.score small { font-size: 12px; color: var(--ink-2); }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+table.mini { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.mini th { text-align: left; font-weight: 500; color: var(--ink-3); padding: 4px 0; font-size: 12px; }
+table.mini td { text-align: right; padding: 4px 0 4px 6px; font-weight: 700; }
+table.mini td.muted { font-weight: 400; font-size: 12px; }
+@media (max-width: 420px) { .two-col { grid-template-columns: 1fr; } }
+
+/* 실거래 상세표 */
+.trade-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.seg.sm { height: 32px; box-shadow: none; background: var(--bg-2); }
+.seg.sm button { padding: 0 10px; font-size: 12px; }
+.table tr.canceled td { color: var(--ink-3); text-decoration: line-through; }
+.table .tag-sm { font-style: normal; font-size: 10px; margin-left: 4px; padding: 1px 5px; border-radius: 4px; background: var(--bg-2); color: var(--ink-3); text-decoration: none; display: inline-block; }
+.table .sub { font-size: 11px; color: var(--ink-3); font-weight: 400; }
+.btn.block { width: 100%; margin-top: 10px; }
+
+/* 계산기 */
+.calc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0 14px; }
+.calc-grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-3); }
+.calc-grid label span { display: flex; align-items: center; gap: 4px; color: var(--ink-2); }
+.calc-grid input, .calc-grid select { width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; font: inherit; font-size: 14px; color: var(--ink); }
+.calc-grid label:last-child { grid-column: 1 / -1; }
+.calc-out { border: 1px solid var(--line); border-radius: 12px; padding: 4px 14px; }
+.calc-out > div { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.calc-out > div:last-child { border-bottom: 0; }
+.calc-out span { color: var(--ink-2); }
+.calc-out .hl b { color: var(--brand); font-size: 16px; }
+.calc-out .up { color: var(--up); }
+.subtabs { overflow-x: auto; scrollbar-width: none; }
+.subtab { white-space: nowrap; padding: 12px 6px; font-size: 13.5px; }
+.calc-grid label span { white-space: nowrap; }
+.calc-grid label span input { flex: 1; min-width: 0; }
