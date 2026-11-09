@@ -539,3 +539,7 @@ table.mini td.muted { font-weight: 400; font-size: 12px; }
 .subtab { white-space: nowrap; padding: 12px 6px; font-size: 13.5px; }
 .calc-grid label span { white-space: nowrap; }
 .calc-grid label span input { flex: 1; min-width: 0; }
+/* 건물 성적표: 배터리 5칸 */
+.battery { display: inline-flex; align-items: center; gap: 3px; padding: 3px; border: 1.5px solid #ced4da; border-radius: 5px; width: max-content; margin-bottom: 3px; }
+.battery i { display: block; width: 18px; height: 12px; border-radius: 2px; background: #e9ecef; }
+.battery .cap { display: block; width: 3px; height: 7px; margin-left: 1px; margin-right: -6px; border-radius: 0 2px 2px 0; background: #ced4da; }

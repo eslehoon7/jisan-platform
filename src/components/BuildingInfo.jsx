@@ -80,7 +80,16 @@ function Nearby({ ins }) {
 }
 
 // 3. 환금성 + 건물 성적표 (별점)
-const stars = (n) => '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n)
+// 배터리처럼 5칸: 점수가 높을수록 많이 차고 색도 초록에 가까워짐
+const LEVEL_COLOR = ['', '#f03e3e', '#fd7e14', '#fab005', '#82c91e', '#2f9e44']
+function Battery({ n }) {
+  return (
+    <span className="battery" role="img" aria-label={n ? `5점 중 ${n}점` : '정보 없음'}>
+      {[1, 2, 3, 4, 5].map((i) => <i key={i} style={i <= n ? { background: LEVEL_COLOR[n] } : undefined} />)}
+      <b className="cap" />
+    </span>
+  )
+}
 function grade(v, cuts, higherBetter = true) { // cuts: 5점,4점,3점,2점 기준
   if (v == null || Number.isNaN(v)) return null
   for (let i = 0; i < cuts.length; i++) if (higherBetter ? v >= cuts[i] : v <= cuts[i]) return 5 - i
@@ -112,7 +121,7 @@ function ScoreCard({ x, ins }) {
         {rows.map((r) => (
           <div key={r.k}>
             <dt>{r.k}</dt>
-            <dd><span className="stars">{r.s ? stars(r.s) : '－'}</span><small>{r.v}{r.tip ? ` · ${r.tip}` : ''}</small></dd>
+            <dd>{r.s ? <Battery n={r.s} /> : <span className="muted small">－</span>}<small>{r.v}{r.tip ? ` · ${r.tip}` : ''}</small></dd>
           </div>
         ))}
       </dl>
