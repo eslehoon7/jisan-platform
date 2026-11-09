@@ -473,3 +473,8 @@ a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 .pb-bars > div:last-child i { background: #0b3d91; opacity: 1; }
 .pb-bars span { font-size: 11px; color: var(--ink-3); }
 .sheet .facts > div { grid-template-columns: 96px 1fr; }
+.pb-years { list-style: none; margin: 12px 0 8px; padding: 10px 0 0; border-top: 1px solid var(--line); display: grid; gap: 6px; }
+.pb-years li { display: grid; grid-template-columns: 64px 1fr auto; align-items: baseline; font-size: 14px; }
+.pb-years span { color: var(--ink-3); font-size: 13px; }
+.pb-years b { font-weight: 700; color: var(--ink); }
+.pb-years em { font-style: normal; color: var(--ink-3); font-size: 12px; }

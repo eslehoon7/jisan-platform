@@ -72,29 +72,26 @@ export default function BuildingPanel({ building: b, dealType, session, onClose,
 function BasicInfo({ b, d, st }) {
   const x = { ...b, ...(d || {}) }
   const diff = st?.py_1y && st?.py_prev_1y ? ((st.py_1y - st.py_prev_1y) / st.py_prev_1y) * 100 : null
-  const years = (st?.by_year || []).slice(-6)
-  const maxPy = Math.max(1, ...years.map((y) => y.py || 0))
+  const years = (st?.by_year || []).slice(-5).reverse() // 최근 연도부터
+  // 최근 1년 거래가 없으면 가장 최근 연도 평균을 대신 보여줌
+  const main = st?.py_1y ? { label: '최근 1년 평균 평당가', py: st.py_1y, note: `${st.cnt_1y}건 기준` }
+    : years[0] ? { label: `${years[0].y}년 평균 평당가`, py: years[0].py, note: `${years[0].n}건 기준 · 최근 1년 거래 없음` } : null
   const row = (k, v) => v ? <div><dt>{k}</dt><dd>{v}</dd></div> : null
   const n0 = (v) => (v == null ? null : Number(v).toLocaleString())
   return (
     <>
-      {st?.total > 0 && (
+      {st?.total > 0 && main && (
         <div className="price-box">
           <div className="pb-main">
-            <span>최근 1년 평균 평당가</span>
-            <strong>{st.py_1y ? perPy(st.py_1y) : '-'}</strong>
-            <small>{st.cnt_1y ? `${st.cnt_1y}건 기준` : '최근 1년 거래 없음'}
+            <span>{main.label}</span>
+            <strong>{perPy(main.py)}</strong>
+            <small>{main.note}
               {diff != null && <b className={diff >= 0 ? 'up' : 'down'}> · 전년 대비 {diff >= 0 ? '▲' : '▼'}{Math.abs(diff).toFixed(1)}%</b>}</small>
           </div>
           {years.length > 1 && (
-            <div className="pb-bars" aria-label="연도별 평균 평당가">
-              {years.map((y) => (
-                <div key={y.y} title={`${y.y}년 ${perPy(y.py)} (${y.n}건)`}>
-                  <i style={{ height: `${Math.max(8, (y.py / maxPy) * 100)}%` }} />
-                  <span>{String(y.y).slice(2)}년</span>
-                </div>
-              ))}
-            </div>
+            <ul className="pb-years">
+              {years.map((y) => <li key={y.y}><span>{y.y}년</span><b>{perPy(y.py)}</b><em>{y.n}건</em></li>)}
+            </ul>
           )}
           <p className="muted small">전체 실거래 {st.total}건 · 마지막 거래 {st.last_date} · 국토부 실거래가 기준</p>
         </div>
