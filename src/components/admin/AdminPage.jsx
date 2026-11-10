@@ -6,12 +6,14 @@ import ExcelImport from './ExcelImport'
 import TradesAdmin from './TradesAdmin'
 import BusinessesAdmin from './BusinessesAdmin'
 import AgentPreview from './AgentPreview'
+import AdsAdmin from './AdsAdmin'
 
 const TABS = [
   { key: 'biz', label: '🧾 사업자 승인' },
   { key: 'buildings', label: '🏢 건물' },
   { key: 'listings', label: '🔑 매물·경매·분양' },
   { key: 'trades', label: '📈 실거래' },
+  { key: 'ads', label: '📣 광고' },
   { key: 'preview', label: '👀 중개사 화면' },
 ]
 
@@ -54,6 +56,7 @@ export default function AdminPage({ profile }) {
         {tab === 'trades' && <TradesAdmin onRegister={register} />}
         {tab === 'biz' && <BusinessesAdmin />}
         {tab === 'preview' && <AgentPreview />}
+        {tab === 'ads' && <AdsAdmin />}
       </main>
     </div>
   )

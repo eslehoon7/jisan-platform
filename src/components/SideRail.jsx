@@ -1,3 +1,5 @@
+import AdBanner from './AdBanner'
+
 // 왼쪽 세로 메뉴 (진한 남색 사이드바)
 // 사업명·로고는 BRAND 에서 바꾸면 돼요. 로고 이미지가 생기면 public/logo.svg 로 넣고 BRAND.logo 에 '/logo.svg'
 export const BRAND = {
@@ -66,9 +68,14 @@ export default function SideRail({ menu, onMenu }) {
           </button>
         ))}
       </div>
-      <div className="rail-promo">
-        <Skyline />
-        <p>지식산업센터 투자,<br />데이터로 더 똑똑하게!</p>
+      {/* 광고 배너가 있으면 배너, 없으면 기본 안내 */}
+      <div className="rail-bottom">
+        <AdBanner fallback={(
+          <div className="rail-promo">
+            <Skyline />
+            <p>지식산업센터 투자,<br />데이터로 더 똑똑하게!</p>
+          </div>
+        )} />
         <a className="rail-cta" href="#/biz">중개사 입점 신청 <span aria-hidden="true">→</span></a>
       </div>
     </nav>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadNaverMap } from '../lib/naverMap'
+import { loadAds, adImg, adView, adClick } from '../lib/ads'
 import { wonShort, m2, priceLabel } from '../lib/format'
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
@@ -7,7 +8,16 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 // 축척 300m 이상(멀리)에서는 '시세 알약', 100m 이하(가까이)에서는 전체 말풍선
 export const FULL_ZOOM = 16 // 네이버 축척 16단계 = 100m, 15단계 = 300m
 export const AREA_ZOOM = 13 // 이보다 멀면(1km 이상) 건물 대신 '지역 묶음'(시·군·구별 개수·평균 평단가)
-const MAX_MARKERS = 400 // 화면 안 건물만, 최대 400개까지 그림
+const MAX_MARKERS = 400
+const SALE_PIN_ZOOM = 11 // 분양 광고 핀이 보이기 시작하는 줌
+
+// 분양 현장 핀: 건물 이미지 + '분양' 배지 + 현장명 (멀리서는 작게)
+const DEFAULT_SALE_IMG = `data:image/svg+xml;utf8,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 110"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb37a"/><stop offset="1" stop-color="#e8590c"/></linearGradient><linearGradient id="h" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#c2410c"/><stop offset="1" stop-color="#9a3412"/></linearGradient></defs><polygon points="14,22 46,10 46,104 14,104" fill="url(#g)"/><polygon points="46,10 68,20 68,104 46,104" fill="url(#h)"/><g fill="#fff6ee" opacity=".75">' + Array.from({ length: 9 }, (_, r) => [0, 1, 2].map((c) => `<rect x="${18 + c * 9}" y="${26 + r * 8.6}" width="5" height="4"/>`).join('')).join('') + '</g><rect x="8" y="104" width="66" height="4" rx="2" fill="#7c2d12"/></svg>')}`
+function salePinHtml(p, zoom) {
+  const s = zoom >= 15 ? 1 : zoom >= 13 ? 0.8 : 0.62
+  const img = adImg(p.image_path) || DEFAULT_SALE_IMG
+  return `<div class="sale-pin" style="--s:${s}"><img src="${img}" alt="" /><div class="sp-label"><b>분양</b><span>${esc(p.title)}</span>${p.subtitle ? `<small>${esc(p.subtitle)}</small>` : ''}</div></div>`
+} // 화면 안 건물만, 최대 400개까지 그림
 
 // 지역 묶음: 시·군·구(권역)별 건물 수 + 평균 평당가
 function areaGroups(buildings) {
@@ -70,7 +80,8 @@ function pinHtml(b, active, dealType) {
 export default function MapView({ center, buildings, dealType, selected, vendors, onSelect }) {
   const box = useRef(null)
   const map = useRef(null)
-  const layers = useRef({ buildings: [], vendors: [], circle: null })
+  const layers = useRef({ buildings: [], vendors: [], circle: null, pins: [] })
+  const [salePins, setSalePins] = useState([])
   const [status, setStatus] = useState('loading')
   const [msg, setMsg] = useState('')
   const [zoomedOut, setZoomedOut] = useState(false)
@@ -99,7 +110,11 @@ export default function MapView({ center, buildings, dealType, selected, vendors
         naver.maps.Event.addListener(map.current, 'zoom_changed', (z) => { setZoomedOut(z < 14); setCompact(z < FULL_ZOOM) })
         setCompact(map.current.getZoom() < FULL_ZOOM)
         // 지도를 다 움직이고 멈췄을 때만 보이는 범위를 다시 계산 (건물이 많아도 가볍게)
-        const sync = () => setView({ zoom: map.current.getZoom(), bounds: map.current.getBounds() })
+        const sync = () => {
+          setView({ zoom: map.current.getZoom(), bounds: map.current.getBounds() })
+          const c = map.current.getCenter()
+          window.dispatchEvent(new CustomEvent('map-idle', { detail: { lat: c.lat(), lng: c.lng(), zoom: map.current.getZoom() } }))
+        }
         naver.maps.Event.addListener(map.current, 'idle', sync)
         sync()
         // 검색창 밑 '지역 이동'에서 보내는 이동 요청
@@ -197,6 +212,28 @@ export default function MapView({ center, buildings, dealType, selected, vendors
       },
     }))
   }, [selected, vendors, status])
+
+  // 분양 현장 광고: 건물 모양 이미지로 크게 (줌 11 이상, 화면 안만)
+  useEffect(() => { loadAds().then((a) => setSalePins(a.pins)).catch(() => {}) }, [])
+  useEffect(() => {
+    const naver = window.naver
+    if (status !== 'ready' || !naver || !view) return
+    layers.current.pins.forEach((m) => m.setMap(null))
+    layers.current.pins = []
+    if (view.zoom < SALE_PIN_ZOOM) return
+    const sw = view.bounds.getSW(), ne = view.bounds.getNE()
+    layers.current.pins = salePins
+      .filter((p) => p.lat >= sw.lat() && p.lat <= ne.lat() && p.lng >= sw.lng() && p.lng <= ne.lng())
+      .map((p) => {
+        adView('pin', p.id)
+        const m = new naver.maps.Marker({
+          position: new naver.maps.LatLng(p.lat, p.lng), map: map.current, zIndex: 5000 + (p.priority || 0),
+          icon: { content: salePinHtml(p, view.zoom), anchor: new naver.maps.Point(0, 0) },
+        })
+        naver.maps.Event.addListener(m, 'click', () => adClick('pin', p))
+        return m
+      })
+  }, [salePins, view, status])
 
   return (
     <div className={zoomedOut ? 'map zoomed-out' : 'map'}>
