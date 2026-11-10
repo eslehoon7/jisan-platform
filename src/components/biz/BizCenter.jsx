@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { bizInfo, LISTING_TYPES, fmtTel } from '../../lib/business'
-import ListingsAdmin from '../admin/ListingsAdmin'
+import AgentListings from './AgentListings'
 import BusinessApplyForm from './BusinessApplyForm'
 import { Toast } from '../admin/ui'
 
@@ -103,7 +103,7 @@ export default function BizCenter({ session }) {
   if (tab === 'info') body = <BizInfoEdit biz={biz} onSaved={load} />
   else if (tab === 'board') body = <ComingSoon biz={biz} />
   else if (isLister) body = tab === 'inbox' ? <AgentInbox agentId={agentId} /> : agentId
-    ? <ListingsAdmin agentId={agentId} allowedTypes={biz.biz_type === '분양대행' ? ['분양'] : ['매매', '임대', '분양']} />
+    ? <AgentListings agentId={agentId} bizType={biz.biz_type} />
     : <p className="muted">중개사 정보를 불러오는 중…</p>
   else body = <VendorInbox userId={session.user.id} />
 
@@ -151,7 +151,7 @@ function BizInfoEdit({ biz, onSaved }) {
   )
 }
 
-function AgentInbox({ agentId }) {
+export function AgentInbox({ agentId }) {
   const [rows, setRows] = useState(null)
   useEffect(() => {
     if (!agentId) return

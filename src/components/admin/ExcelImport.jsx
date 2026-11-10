@@ -46,9 +46,9 @@ function parseFloor(v) {
 }
 const toNum = (v) => (v == null || v === '' ? null : Number(String(v).replace(/[^\d.]/g, '')) || null)
 
-export default function ExcelImport({ onDone }) {
+export default function ExcelImport({ onDone, fixedAgentId = null }) {
   const [agents, setAgents] = useState([])
-  const [agentId, setAgentId] = useState('')
+  const [agentId, setAgentId] = useState(fixedAgentId ? String(fixedAgentId) : '')
   const [newAgent, setNewAgent] = useState(null)
   const [buildings, setBuildings] = useState([])
   const [rows, setRows] = useState([])
@@ -62,7 +62,7 @@ export default function ExcelImport({ onDone }) {
     setAgents(data || [])
   }
   useEffect(() => {
-    loadAgents()
+    if (!fixedAgentId) loadAgents()
     // 건물 목록 (1000개씩 나눠서)
     ;(async () => {
       const all = []
@@ -190,14 +190,14 @@ export default function ExcelImport({ onDone }) {
   return (
     <div className="excel-import">
       <h3>📥 엑셀로 매물 한꺼번에 등록</h3>
-      <p className="muted small">중개사에게 받은 매물 목록을 올리면 건물을 자동으로 찾아 연결해요. 한 파일 = 한 중개사무소 기준이에요.</p>
+      <p className="muted small">{fixedAgentId ? '매물 목록 엑셀을 올리면 건물을 자동으로 찾아 내 매물로 한꺼번에 등록해요.' : '중개사에게 받은 매물 목록을 올리면 건물을 자동으로 찾아 연결해요. 한 파일 = 한 중개사무소 기준이에요.'}</p>
 
-      <div className="ei-step"><b>1</b> 중개사무소 고르기
+      {!fixedAgentId && <div className="ei-step"><b>1</b> 중개사무소 고르기
         <select value={agentId} onChange={(e) => setAgentId(e.target.value)}>
           <option value="">선택하세요</option>{agentOpts}
         </select>
         <button className="btn white sm" onClick={() => setNewAgent(newAgent ? null : { office_name: '', representative: '', registration_no: '', office_phone: '', office_address: '' })}>+ 새 중개사무소</button>
-      </div>
+      </div>}
       {newAgent && (
         <div className="ei-agent">
           {[['office_name', '사무소 이름'], ['representative', '대표 공인중개사'], ['registration_no', '중개사무소 등록번호'], ['office_phone', '대표 전화'], ['office_address', '사무소 주소']].map(([k, l]) => (
@@ -207,17 +207,17 @@ export default function ExcelImport({ onDone }) {
         </div>
       )}
 
-      <div className="ei-step"><b>2</b> 양식 받아서 채우기 <button className="btn white sm" onClick={downloadTemplate}>📄 양식 받기 (.xlsx)</button>
+      <div className="ei-step"><b>{fixedAgentId ? 1 : 2}</b> 양식 받아서 채우기 <button className="btn white sm" onClick={downloadTemplate}>📄 양식 받기 (.xlsx)</button>
         <span className="muted small">회색 예시 줄은 그대로 둬도 자동으로 빼고 읽어요</span></div>
 
-      <div className="ei-step"><b>3</b> 채운 파일 올리기 <label className="btn primary sm file-btn">📂 파일 고르기<input type="file" accept=".xlsx" onChange={onFile} hidden /></label>
+      <div className="ei-step"><b>{fixedAgentId ? 2 : 3}</b> 채운 파일 올리기 <label className="btn primary sm file-btn">📂 파일 고르기<input type="file" accept=".xlsx" onChange={onFile} hidden /></label>
         <label className="small">확인일 <input type="date" value={confirmed} onChange={(e) => setConfirmed(e.target.value)} /></label></div>
 
       {msg && <p className={msg.startsWith('⚠') ? 'molit-note err' : 'molit-note'}>{msg}</p>}
 
       {rows.length > 0 && (
         <>
-          <p className="small"><b>4</b> 건물 연결 확인 — 전체 {rows.length}줄 · 등록 예정 <b>{ready.length}건</b>
+          <p className="small"><b>{fixedAgentId ? 3 : 4}</b> 건물 연결 확인 — 전체 {rows.length}줄 · 등록 예정 <b>{ready.length}건</b>
             {rows.some((r) => !r.id) && <span className="muted"> · '확인 필요/못 찾음'은 오른쪽에서 건물을 골라 주세요</span>}</p>
           <div className="ei-table-wrap">
             <table className="atable static">

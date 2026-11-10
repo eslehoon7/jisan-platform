@@ -5,12 +5,14 @@ import AuctionTodo from './AuctionTodo'
 import ExcelImport from './ExcelImport'
 import TradesAdmin from './TradesAdmin'
 import BusinessesAdmin from './BusinessesAdmin'
+import AgentPreview from './AgentPreview'
 
 const TABS = [
   { key: 'biz', label: '🧾 사업자 승인' },
   { key: 'buildings', label: '🏢 건물' },
   { key: 'listings', label: '🔑 매물·경매·분양' },
   { key: 'trades', label: '📈 실거래' },
+  { key: 'preview', label: '👀 중개사 화면' },
 ]
 
 // 관리자 화면 (주소: /#/admin)
@@ -51,6 +53,7 @@ export default function AdminPage({ profile }) {
         </>}
         {tab === 'trades' && <TradesAdmin onRegister={register} />}
         {tab === 'biz' && <BusinessesAdmin />}
+        {tab === 'preview' && <AgentPreview />}
       </main>
     </div>
   )

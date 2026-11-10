@@ -561,3 +561,9 @@ table.mini td.muted { font-weight: 400; font-size: 12px; }
 .ei-table-wrap .err { color: var(--up); }
 .bpick { display: flex; flex-direction: column; gap: 4px; min-width: 200px; }
 .bpick input, .bpick select { height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0 6px; font: inherit; font-size: 12px; }
+
+/* 관리자: 중개사 화면 미리보기 */
+.preview-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 14px; border-radius: 10px; background: #fff8db; border: 1px solid #ffe066; margin-bottom: 14px; }
+.preview-bar select { height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; font: inherit; font-size: 13px; min-width: 240px; }
+.preview-frame { border: 3px dashed #fab005; border-radius: 14px; overflow: hidden; }
+.preview-frame .admin-top { position: static; }
