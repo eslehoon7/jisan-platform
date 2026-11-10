@@ -1,8 +1,8 @@
 // 왼쪽 세로 메뉴 (진한 남색 사이드바)
 // 사업명·로고는 BRAND 에서 바꾸면 돼요. 로고 이미지가 생기면 public/logo.svg 로 넣고 BRAND.logo 에 '/logo.svg'
 export const BRAND = {
-  name: '지산맵',
-  sub: '지식산업센터 데이터 플랫폼',
+  name: '지산랩',
+  sub: 'JisanLab · 지식산업센터 데이터 플랫폼',
   logo: null, // 예) '/logo.svg'
 }
 

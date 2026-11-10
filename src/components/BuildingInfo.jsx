@@ -190,7 +190,7 @@ function SiteInfo({ x }) {
       <h4>🔎 현장 확인 정보 {x.site_checked_at && <small className="muted">{x.site_checked_at} 확인</small>}</h4>
       {items.length ? (
         <dl className="facts">{items.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
-      ) : <p className="small muted">지산맵이 직접 방문해서 층고·드라이브인·관리비 등을 확인할 예정이에요.</p>}
+      ) : <p className="small muted">지산랩이 직접 방문해서 층고·드라이브인·관리비 등을 확인할 예정이에요.</p>}
       {x.site_note && <p className="small">{x.site_note}</p>}
     </section>
   )

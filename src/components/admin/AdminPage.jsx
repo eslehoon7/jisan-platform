@@ -36,7 +36,7 @@ export default function AdminPage({ profile }) {
     <div className="admin">
       <header className="admin-top">
         <a href="#/" className="admin-back">← 지도로</a>
-        <h1>지산맵 관리자</h1>
+        <h1>지산랩 관리자</h1>
         <nav className="admin-tabs">
           {TABS.map((t) => (
             <button key={t.key} className={tab === t.key ? 'on' : ''} onClick={() => setTab(t.key)}>{t.label}</button>

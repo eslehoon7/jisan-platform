@@ -101,7 +101,7 @@ export default function ExcelImport({ onDone, fixedAgentId = null }) {
     const { default: writeXlsxFile } = await import('write-excel-file')
     const head = COLS.map((c) => ({ value: c.label, fontWeight: 'bold', backgroundColor: '#E8F0FD' }))
     const ex = COLS.map((c, i) => ({ value: i === 0 ? `${EX_MARK} ${c.ex}` : c.ex === '' ? null : c.ex, color: '#8B95A1' }))
-    await writeXlsxFile([head, ex], { columns: COLS.map((c) => ({ width: c.width })), fileName: '지산맵_매물_일괄등록_양식.xlsx', sheet: '매물' })
+    await writeXlsxFile([head, ex], { columns: COLS.map((c) => ({ width: c.width })), fileName: '지산랩_매물_일괄등록_양식.xlsx', sheet: '매물' })
   }
 
   async function onFile(e) {

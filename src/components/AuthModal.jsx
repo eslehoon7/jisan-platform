@@ -124,7 +124,7 @@ export default function AuthModal({ onClose, initialMode = 'login', initialKind 
           </div>
         ) : (
           <>
-            <h3>{mode === 'signup' ? '지산맵 회원가입' : kind === 'business' ? '사업자 로그인' : '로그인'}</h3>
+            <h3>{mode === 'signup' ? '지산랩 회원가입' : kind === 'business' ? '사업자 로그인' : '로그인'}</h3>
             <p className="muted">{mode === 'signup' ? '가입하면 전체 실거래 내역, 매물 상세, 업체 연락처를 볼 수 있어요.' : kind === 'business' ? '로그인하면 사업자센터로 이동해요.' : '다시 오신 걸 환영해요.'}</p>
 
             {/* ── 기본 회원가입 / 로그인 ── */}
