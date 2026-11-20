@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { won, perPy, pyeong } from '../lib/format'
 
 // 건물 '정보' 탭 — 지식산업센터 맞춤 정보
-// 1 시세 카드 · 2 동네 비교 · 3 환금성·건물 성적표 · 4 면적별·층별 평당가 · 5 주변 공급 · 6 현장 정보 · 7 건물 개요
+// 1 시세 카드 · 2 동네 비교 · 3 건물 개요 · 4 건물 성적표 · 5 면적별·층별 평당가 · 6 주변 공급 · 7 현장 정보
 export default function BuildingInfo({ b, d, ins, onTab }) {
   const x = { ...b, ...(d || {}) }
   if (!ins) return <p className="muted">불러오는 중…</p>
@@ -10,11 +10,11 @@ export default function BuildingInfo({ b, d, ins, onTab }) {
     <div className="binfo">
       <PriceCards b={b} ins={ins} onTab={onTab} />
       <Nearby ins={ins} />
+      <Overview x={x} />
       <ScoreCard x={x} ins={ins} />
       <Breakdown ins={ins} />
       <Supply ins={ins} />
       <SiteInfo x={x} />
-      <Overview x={x} />
       <p className="muted small">출처: 국토교통부 실거래가·건축물대장, 한국산업단지공단 지식산업센터 현황. 평당가는 전용면적 기준, 역 거리는 직선거리예요.</p>
     </div>
   )
