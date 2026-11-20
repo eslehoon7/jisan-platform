@@ -637,3 +637,4 @@ table.mini td.muted { font-weight: 400; font-size: 12px; }
 .ov-toggle:hover { color: var(--brand); }
 .ov-toggle .chev { display: inline-block; font-size: 16px; line-height: 1; transform: translateY(-3px); transition: transform .15s; }
 .ov-toggle .chev.open { transform: rotate(180deg) translateY(-2px); }
+.overview h4 { margin: 4px 0 8px; font-size: 15px; font-weight: 700; }

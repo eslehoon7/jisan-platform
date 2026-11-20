@@ -213,6 +213,7 @@ export function Overview({ x }) {
   ].filter(Boolean)
   return (
     <section className="overview">
+      <h4>🏢 건물 개요</h4>
       <dl className="facts">
         {row('교통', x.transit)}
         {row('준공', x.use_apr_day ? `${x.use_apr_day.replaceAll('-', '.')} (사용승인)` : x.completed_year && `${x.completed_year}년`)}
