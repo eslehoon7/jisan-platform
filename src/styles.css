@@ -629,3 +629,11 @@ table.mini td.muted { font-weight: 400; font-size: 12px; }
 .region-picker { display: flex; flex-direction: column; gap: 8px; font-weight: 400; }
 .rp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 4px 10px; max-height: 220px; overflow: auto; padding: 8px; border: 1px solid var(--line); border-radius: 9px; font-size: 13px; }
 .rp-grid .linkish { text-align: left; }
+
+/* 건물 개요 (요약 아래, 펼치기) */
+.overview { margin: 4px 0 6px; padding: 4px 2px 0; }
+.overview .facts { margin: 0; }
+.ov-toggle { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; margin-top: 6px; padding: 8px 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--ink-2); font-size: 13px; font-weight: 600; cursor: pointer; }
+.ov-toggle:hover { color: var(--brand); }
+.ov-toggle .chev { display: inline-block; font-size: 16px; line-height: 1; transform: translateY(-3px); transition: transform .15s; }
+.ov-toggle .chev.open { transform: rotate(180deg) translateY(-2px); }

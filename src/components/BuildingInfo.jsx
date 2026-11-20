@@ -10,7 +10,6 @@ export default function BuildingInfo({ b, d, ins, onTab }) {
     <div className="binfo">
       <PriceCards b={b} ins={ins} onTab={onTab} />
       <Nearby ins={ins} />
-      <Overview x={x} />
       <ScoreCard x={x} ins={ins} />
       <Breakdown ins={ins} />
       <Supply ins={ins} />
@@ -197,25 +196,34 @@ function SiteInfo({ x }) {
 }
 
 // 7. 건물 개요 (건축물대장)
-function Overview({ x }) {
+// 건물 개요 (건축물대장) — 위쪽 요약 아래에 두고, 교통·준공·규모까지만 보이고 나머지는 펼치기
+export function Overview({ x }) {
+  const [open, setOpen] = useState(false)
   const row = (k, v) => (v ? <div key={k}><dt>{k}</dt><dd>{v}</dd></div> : null)
   const n0 = (v) => Number(v).toLocaleString()
+  const more = [
+    row('연면적', x.gross_area_m2 && `${n0(Math.round(x.gross_area_m2))}㎡ (${pyeong(x.gross_area_m2)})`),
+    row('대지면적', x.plat_area_m2 && `${n0(Math.round(x.plat_area_m2))}㎡ (${pyeong(x.plat_area_m2)})`),
+    row('건폐율·용적률', (x.bc_rat || x.vl_rat) && `${x.bc_rat ? Number(x.bc_rat).toFixed(1) + '%' : '-'} · ${x.vl_rat ? Number(x.vl_rat).toFixed(1) + '%' : '-'}`),
+    row('호실 수', x.units && `${n0(x.units)}호`),
+    row('주차', x.parking_spaces && `${n0(x.parking_spaces)}대`),
+    row('승강기', x.elevators && `${x.elevators}대`),
+    row('구조', x.structure),
+    row('용도', [x.main_use, x.etc_purps].filter(Boolean).join(' · ')),
+  ].filter(Boolean)
   return (
-    <section className="box">
-      <h4>🏢 건물 개요</h4>
+    <section className="overview">
       <dl className="facts">
         {row('교통', x.transit)}
         {row('준공', x.use_apr_day ? `${x.use_apr_day.replaceAll('-', '.')} (사용승인)` : x.completed_year && `${x.completed_year}년`)}
         {row('규모', x.floors_above && `지하 ${x.floors_below ?? 0}층 / 지상 ${x.floors_above}층`)}
-        {row('연면적', x.gross_area_m2 && `${n0(Math.round(x.gross_area_m2))}㎡ (${pyeong(x.gross_area_m2)})`)}
-        {row('대지면적', x.plat_area_m2 && `${n0(Math.round(x.plat_area_m2))}㎡ (${pyeong(x.plat_area_m2)})`)}
-        {row('건폐율·용적률', (x.bc_rat || x.vl_rat) && `${x.bc_rat ? Number(x.bc_rat).toFixed(1) + '%' : '-'} · ${x.vl_rat ? Number(x.vl_rat).toFixed(1) + '%' : '-'}`)}
-        {row('호실 수', x.units && `${n0(x.units)}호`)}
-        {row('주차', x.parking_spaces && `${n0(x.parking_spaces)}대`)}
-        {row('승강기', x.elevators && `${x.elevators}대`)}
-        {row('구조', x.structure)}
-        {row('용도', [x.main_use, x.etc_purps].filter(Boolean).join(' · '))}
+        {open && more}
       </dl>
+      {more.length > 0 && (
+        <button className="ov-toggle" onClick={() => setOpen(!open)} aria-expanded={open}>
+          {open ? '접기' : '건물 정보 더보기'} <span className={open ? 'chev open' : 'chev'} aria-hidden="true">⌄</span>
+        </button>
+      )}
     </section>
   )
 }

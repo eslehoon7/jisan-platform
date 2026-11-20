@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Transactions from './Transactions'
 import Listings from './Listings'
 import NearbyVendors from './NearbyVendors'
-import BuildingInfo from './BuildingInfo'
+import BuildingInfo, { Overview } from './BuildingInfo'
 import Calculator from './Calculator'
 import { wonShort, m2 } from '../lib/format'
 import { supabase } from '../lib/supabase'
@@ -53,6 +53,7 @@ export default function BuildingPanel({ building: b, dealType, session, onClose,
         <div><span>면적</span><strong>{b.show_area ? m2(b.show_area) : '-'}</strong></div>
       </div>
 
+      <Overview x={{ ...b, ...(d || {}) }} />
       <div className="subtabs" role="tablist">
         {TABS.map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? 'subtab active' : 'subtab'} onClick={() => setTab(t)}>{t}</button>
